@@ -160,6 +160,22 @@ class PayPalClient:
                 f"Invalid PAYPAL_PROVIDER_MODE '{self.mode}'. Expected 'SANDBOX_API' or 'SIMULATOR'."
             )
 
+        if os.environ.get("DEMO_MODE", "false").strip().lower() == "true":
+            from urllib.parse import urlparse
+            host = (urlparse(self.base_url).hostname or "").lower()
+            is_sandbox_host = (
+                host in ("api-m.sandbox.paypal.com", "api.sandbox.paypal.com")
+                or host.endswith(".sandbox.paypal.com")
+            )
+            is_prod_paypal = (
+                host in ("paypal.com", "www.paypal.com", "api.paypal.com", "api-m.paypal.com")
+                or (host.endswith(".paypal.com") and not is_sandbox_host)
+            )
+            if is_prod_paypal or (self.is_sandbox_api_mode and not is_sandbox_host):
+                raise PayPalClientConfigurationError(
+                    f"CRITICAL SECURITY ERROR: DEMO_MODE=true cannot be used with PayPal production or non-sandbox endpoint '{self.base_url}'."
+                )
+
         if self.is_sandbox_api_mode:
             if not self.base_url.startswith("https://"):
                 raise PayPalClientConfigurationError(

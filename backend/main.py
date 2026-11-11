@@ -36,6 +36,10 @@ from backend.database import (
     get_app_conn,
     get_auditor_conn,
     get_verifier_conn,
+    get_officer_private_keys,
+    is_demo_mode,
+    validate_demo_mode_paypal_safety,
+    _is_placeholder_value,
     seed_demo_data,
     USER_ALICE_MAKER,
     USER_BOB_CHECKER1,
@@ -66,65 +70,143 @@ from crypto_verifier import create_webauthn_assertion
 
 app = FastAPI(title="DeepfakeShield for PayPal", version="10.1.3")
 
-# Initialize seed data on startup & verify cryptographic environment policy
+def validate_runtime_security_configuration() -> None:
+    """
+    Validates startup security invariants:
+    1. Blocks DEMO_MODE=true when paired with PayPal production endpoints.
+    2. Enforces STRICT_CRYPTO_ENFORCEMENT=true by default (cannot disable outside DEMO_MODE=true).
+    3. Requires explicit database, authentication, and signing credentials outside DEMO_MODE=true.
+    """
+    validate_demo_mode_paypal_safety()
+    demo_enabled = is_demo_mode()
+
+    strict_flag = os.environ.get("STRICT_CRYPTO_ENFORCEMENT", "true").strip().lower()
+    if strict_flag == "false":
+        if not demo_enabled:
+            raise RuntimeError(
+                "CRITICAL SECURITY ERROR: STRICT_CRYPTO_ENFORCEMENT cannot be disabled outside DEMO_MODE=true."
+            )
+    else:
+        for crypto_var in ("ATTESTATION_SECRET", "BLIND_INDEX_KEY", "AUTH_ASSERTION_KEY"):
+            if _is_placeholder_value(os.environ.get(crypto_var)):
+                raise RuntimeError(
+                    f"CRITICAL SECURITY ERROR: Required cryptographic key '{crypto_var}' is missing or placeholder "
+                    "while STRICT_CRYPTO_ENFORCEMENT is enabled."
+                )
+
+    if demo_enabled:
+        return
+
+    # Normal startup requires explicit database role credentials (never insecure defaults)
+    for db_var in ("APP_PASSWORD", "VERIFIER_PASSWORD", "WORKER_PASSWORD", "AUDITOR_PASSWORD"):
+        if _is_placeholder_value(os.environ.get(db_var)):
+            raise RuntimeError(
+                f"CRITICAL SECURITY ERROR: Explicit database credential '{db_var}' is required at startup "
+                "(or set DEMO_MODE=true for local Sandbox demo)."
+            )
+
+    # Normal startup requires explicit authentication credentials for core treasury roles
+    missing_auth = [
+        uname for uname in ("alice_ap_maker", "bob_checker", "carol_checker_two", "dave_auditor")
+        if _resolve_operator_credential(uname) is None
+    ]
+    if missing_auth:
+        raise RuntimeError(
+            "CRITICAL SECURITY ERROR: Explicit authentication credentials are required for operators "
+            f"{missing_auth} at startup (configure <ROLE>_PASSWORD / OPERATOR_CREDENTIALS, or enable DEMO_MODE=true)."
+        )
+
+# Initialize runtime security validation & optional DEMO_MODE fixture seeding on startup
 @app.on_event("startup")
 def startup_event():
-    if os.environ.get("STRICT_CRYPTO_ENFORCEMENT", "false").lower() == "true":
-        if not os.environ.get("ATTESTATION_SECRET") or not os.environ.get("BLIND_INDEX_KEY") or not os.environ.get("AUTH_ASSERTION_KEY"):
-            raise RuntimeError("CRITICAL SECURITY ERROR: Required cryptographic keys missing in environment with STRICT_CRYPTO_ENFORCEMENT=true")
-    seed_demo_data()
+    validate_runtime_security_configuration()
+    OFFICER_PRIVATE_KEYS.clear()
+    OFFICER_PRIVATE_KEYS.update(get_officer_private_keys())
+    reset_auth_sessions()
+    if is_demo_mode():
+        seed_demo_data()
 
 # -----------------------------------------------------------------------------
 # 0. AUTHENTICATION, RATE LIMITING & SERVER-SIDE RBAC SESSIONS
 # -----------------------------------------------------------------------------
-AUTH_SESSIONS: Dict[str, Dict[str, Any]] = {
-    "token-alice-maker": {
+# Non-secret directory of configured operator accounts (no tokens or passwords stored here)
+OPERATOR_CATALOG: Dict[str, Dict[str, Any]] = {
+    "alice_ap_maker": {
         "user_id": USER_ALICE_MAKER,
         "username": "alice_ap_maker",
         "role": "AP_CLERK",
-        "expires_at": time.time() + 86400,
-        "is_revoked": False
+        "env_prefix": "ALICE",
     },
-    "token-bob-officer": {
+    "bob_checker": {
         "user_id": USER_BOB_CHECKER1,
         "username": "bob_checker",
         "role": "TREASURY_OFFICER",
         "credential_id": BOB_CRED_ID,
-        "expires_at": time.time() + 86400,
-        "is_revoked": False
+        "env_prefix": "BOB",
     },
-    "token-carol-officer": {
+    "carol_checker_two": {
         "user_id": USER_CAROL_CHECKER2,
         "username": "carol_checker_two",
         "role": "TREASURY_OFFICER",
         "credential_id": CAROL_CRED_ID,
-        "expires_at": time.time() + 86400,
-        "is_revoked": False
+        "env_prefix": "CAROL",
     },
-    "token-dave-auditor": {
+    "dave_auditor": {
         "user_id": USER_DAVE_AUDITOR,
         "username": "dave_auditor",
         "role": "AUDITOR",
-        "expires_at": time.time() + 86400,
-        "is_revoked": False
+        "env_prefix": "DAVE",
     },
-    "token-eve-unauthorized": {
+    "eve_unauthorized": {
         "user_id": USER_EVE_UNAUTHORIZED,
         "username": "eve_unauthorized",
         "role": "AP_CLERK",
-        "expires_at": time.time() + 86400,
-        "is_revoked": False
-    }
+        "env_prefix": "EVE",
+    },
 }
 
+_DEMO_TOKEN_BY_USERNAME: Dict[str, str] = {
+    "alice_ap_maker": "token-alice-maker",
+    "bob_checker": "token-bob-officer",
+    "carol_checker_two": "token-carol-officer",
+    "dave_auditor": "token-dave-auditor",
+    "eve_unauthorized": "token-eve-unauthorized",
+}
+
+# Explicit demo-only password fallbacks — NEVER used unless DEMO_MODE=true
+_DEMO_OPERATOR_PASSWORDS: Dict[str, str] = {
+    "alice_ap_maker": "alice_secure_maker_pass_2026",
+    "bob_checker": "bob_yubikey_officer_pass_2026",
+    "carol_checker_two": "carol_titan_officer_pass_2026",
+    "dave_auditor": "dave_read_only_auditor_pass_2026",
+    "eve_unauthorized": "eve_unauthorized_clerk_pass_2026",
+}
+
+def _build_demo_sessions() -> Dict[str, Dict[str, Any]]:
+    validate_demo_mode_paypal_safety()
+    sessions: Dict[str, Dict[str, Any]] = {}
+    for uname, tok in _DEMO_TOKEN_BY_USERNAME.items():
+        meta = OPERATOR_CATALOG[uname]
+        entry: Dict[str, Any] = {
+            "user_id": meta["user_id"],
+            "username": meta["username"],
+            "role": meta["role"],
+            "expires_at": time.time() + 86400,
+            "is_revoked": False,
+        }
+        if "credential_id" in meta:
+            entry["credential_id"] = meta["credential_id"]
+        sessions[tok] = entry
+    return sessions
+
+# Normal startup begins with empty session table; pre-seeded tokens exist ONLY in explicit DEMO_MODE=true
+AUTH_SESSIONS: Dict[str, Dict[str, Any]] = _build_demo_sessions() if is_demo_mode() else {}
+
 def reset_auth_sessions():
-    """Resets dynamic sessions and restores clean base demonstration tokens."""
-    for tok in list(AUTH_SESSIONS.keys()):
-        if tok.startswith("sess-"):
-            del AUTH_SESSIONS[tok]
-        else:
-            AUTH_SESSIONS[tok]["is_revoked"] = False
-            AUTH_SESSIONS[tok]["expires_at"] = time.time() + 86400
+    """Resets dynamic sessions and restores base demonstration tokens only when DEMO_MODE=true."""
+    AUTH_SESSIONS.clear()
+    if is_demo_mode():
+        AUTH_SESSIONS.update(_build_demo_sessions())
 
 LOGIN_RATE_LIMITS: Dict[str, List[float]] = defaultdict(list)
 MAX_LOGIN_ATTEMPTS_PER_MIN = 30
@@ -151,15 +233,49 @@ def verify_password(password: str, stored_hash: str) -> bool:
     except Exception:
         return False
 
-# Pre-computed RFC 7914 scrypt hashes for initial demonstration accounts
-# Plaintext passwords NEVER reside in client-accessible code or plain server dictionaries
-USER_PASSWORD_HASHES: Dict[str, str] = {
-    "alice_ap_maker": hash_password(os.environ.get("ALICE_PASSWORD", "alice_secure_maker_pass_2026")),
-    "bob_checker": hash_password(os.environ.get("BOB_PASSWORD", "bob_yubikey_officer_pass_2026")),
-    "carol_checker_two": hash_password(os.environ.get("CAROL_PASSWORD", "carol_titan_officer_pass_2026")),
-    "dave_auditor": hash_password(os.environ.get("DAVE_PASSWORD", "dave_read_only_auditor_pass_2026")),
-    "eve_unauthorized": hash_password(os.environ.get("EVE_PASSWORD", "eve_unauthorized_clerk_pass_2026")),
-}
+def _resolve_operator_credential(username: str) -> Optional[str]:
+    """
+    Resolves operator credential strictly from explicit environment configuration
+    (OPERATOR_CREDENTIALS JSON, <PREFIX>_PASSWORD_HASH, or <PREFIX>_PASSWORD).
+    Demo fallback passwords are permitted ONLY when DEMO_MODE=true (non-production only).
+    """
+    meta = OPERATOR_CATALOG.get(username)
+    if not meta:
+        return None
+
+    op_json = os.environ.get("OPERATOR_CREDENTIALS")
+    if not _is_placeholder_value(op_json):
+        try:
+            op_map = json.loads(op_json)
+            if isinstance(op_map, dict) and username in op_map:
+                candidate = str(op_map[username])
+                if not _is_placeholder_value(candidate):
+                    return candidate.strip()
+        except Exception:
+            pass
+
+    prefix = meta["env_prefix"]
+    env_hash = os.environ.get(f"{prefix}_PASSWORD_HASH")
+    if not _is_placeholder_value(env_hash):
+        return env_hash.strip()
+
+    env_pass = os.environ.get(f"{prefix}_PASSWORD")
+    if not _is_placeholder_value(env_pass):
+        return env_pass.strip()
+
+    if is_demo_mode():
+        validate_demo_mode_paypal_safety()
+        return _DEMO_OPERATOR_PASSWORDS.get(username)
+
+    return None
+
+def _verify_operator_credential(username: str, candidate_password: str) -> bool:
+    configured = _resolve_operator_credential(username)
+    if not configured:
+        return False
+    if configured.startswith("scrypt:"):
+        return verify_password(candidate_password, configured)
+    return secrets.compare_digest(candidate_password, configured)
 
 def get_current_user(
     authorization: Optional[str] = Header(None),
@@ -290,26 +406,37 @@ def api_login(req: LoginRequest, request: Request):
             detail="Authentication failed: credential secret/password required"
         )
 
-    stored_hash = USER_PASSWORD_HASHES.get(req.username)
-    if stored_hash:
-        if not verify_password(req.password, stored_hash):
+    validate_demo_mode_paypal_safety()
+
+    if req.username in OPERATOR_CATALOG:
+        if _resolve_operator_credential(req.username) is None:
             raise HTTPException(
                 status_code=401,
-                detail="Authentication failed: invalid username or credentials"
+                detail=f"Authentication unavailable: operator '{req.username}' has no configured environment credential",
             )
-        for base_token, u_info in list(AUTH_SESSIONS.items()):
-            if u_info["username"] == req.username:
-                new_token = f"sess-{uuid.uuid4()}"
-                session_data = dict(u_info)
-                session_data["expires_at"] = now + 28800  # 8 hours validity
-                session_data["is_revoked"] = False
-                AUTH_SESSIONS[new_token] = session_data
-                return {
-                    "access_token": new_token,
-                    "token_type": "bearer",
-                    "expires_in": 28800,
-                    "user": session_data
-                }
+        if not _verify_operator_credential(req.username, req.password):
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication failed: invalid username or credentials",
+            )
+        meta = OPERATOR_CATALOG[req.username]
+        new_token = f"sess-{uuid.uuid4()}"
+        session_data: Dict[str, Any] = {
+            "user_id": meta["user_id"],
+            "username": meta["username"],
+            "role": meta["role"],
+            "expires_at": now + 28800,  # 8 hours validity
+            "is_revoked": False,
+        }
+        if "credential_id" in meta:
+            session_data["credential_id"] = meta["credential_id"]
+        AUTH_SESSIONS[new_token] = session_data
+        return {
+            "access_token": new_token,
+            "token_type": "bearer",
+            "expires_in": 28800,
+            "user": session_data,
+        }
 
     reviewer_user = _verify_configured_risk_reviewer_login(req.username, req.password)
     if reviewer_user:
@@ -676,10 +803,22 @@ def api_approve_batch(
         sig_bytes = None
 
         if req.mock_simulation or not (req.client_data_json and req.signature and req.auth_data):
-            # Local test simulation helper
-            priv_key = OFFICER_PRIVATE_KEYS.get(req.credential_id)
+            validate_demo_mode_paypal_safety()
+            if req.mock_simulation and not is_demo_mode():
+                raise HTTPException(
+                    status_code=403,
+                    detail="Simulated officer approvals are disabled outside DEMO_MODE=true; supply a signed WebAuthn assertion.",
+                )
+
+            configured_keys = get_officer_private_keys()
+            priv_key = configured_keys.get(req.credential_id) or (
+                OFFICER_PRIVATE_KEYS.get(req.credential_id) if is_demo_mode() else None
+            )
             if not priv_key:
-                raise HTTPException(status_code=400, detail="Authenticator private key not found for testing")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Authenticator private key not configured; supply a client-signed WebAuthn assertion (or configure explicit signing keys / DEMO_MODE=true).",
+                )
 
             from backend.payout_service import issue_officer_challenge
             chal_res = issue_officer_challenge(batch_id=batch_id, officer_user_id=officer_user_id)
@@ -781,7 +920,7 @@ def api_dashboard_overview(
     import time
     
     if not isinstance(current_user, dict):
-        current_user = AUTH_SESSIONS.get("token-alice-maker")
+        raise HTTPException(status_code=401, detail="Authentication required")
 
     if batch_id and hasattr(batch_id, 'default'):
         batch_id = None

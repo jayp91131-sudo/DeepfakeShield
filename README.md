@@ -187,16 +187,23 @@ cp .env.example .env
 
 Key settings in `.env`:
 
-1. **PostgreSQL Connection & Role Passwords:**
+1. **Runtime Security Policy (`DEMO_MODE=false` & `STRICT_CRYPTO_ENFORCEMENT=true` by default):**
+   - By default (`DEMO_MODE=false`), normal application startup fails closed unless all required database role passwords, operator authentication credentials, and KMS cryptographic signing keys are explicitly supplied via environment variables. No fallback passwords, pre-seeded bearer tokens, or deterministic officer signing keys are active outside explicit `DEMO_MODE=true`.
+   - `STRICT_CRYPTO_ENFORCEMENT` is enabled by default and cannot be disabled outside `DEMO_MODE=true`.
+   - `DEMO_MODE=true` is strictly blocked at startup and inside `PayPalClient` whenever `PAYPAL_BASE_URL` targets a PayPal production endpoint (e.g., `api-m.paypal.com` / `api.paypal.com`).
+2. **PostgreSQL Connection & Role Passwords:**
    - `PGHOST`, `PGPORT` (default `5432`, or `5433` if running a secondary local cluster), `PGDATABASE=deepfakeshield_db`, `PGUSER=postgres`, `PGPASSWORD`.
    - `APP_PASSWORD`, `VERIFIER_PASSWORD`, `WORKER_PASSWORD`, `AUDITOR_PASSWORD` — must match the `ALTER ROLE ... WITH PASSWORD ...` credentials provisioned in PostgreSQL.
-2. **Cryptographic Keys (`STRICT_CRYPTO_ENFORCEMENT=true`):**
+3. **Cryptographic Signing Keys (`STRICT_CRYPTO_ENFORCEMENT=true`):**
    - Generate independent 32-byte hex keys (`64` hex characters) for `ATTESTATION_SECRET`, `BLIND_INDEX_KEY`, and `AUTH_ASSERTION_KEY`, e.g.:
      ```bash
      python -c "import secrets; print(secrets.token_hex(32))"
      ```
-   - Keep `internal_security_keys` in PostgreSQL synchronized with these KMS/env values when initializing custom keys (the default seed helper syncs active dev keys in disposable setups).
-3. **Optional `RISK_REVIEWER` Provisioning (`V10.1.5`):**
+   - Keep `internal_security_keys` in PostgreSQL synchronized with these KMS/env values when initializing custom keys.
+4. **Operator Authentication & WebAuthn Signing Keys:**
+   - Configure explicit credentials for `ALICE_PASSWORD`, `BOB_PASSWORD`, `CAROL_PASSWORD`, `DAVE_PASSWORD`, and optionally `EVE_PASSWORD` (or `*_PASSWORD_HASH` / `OPERATOR_CREDENTIALS` JSON).
+   - In normal mode (`DEMO_MODE=false`), simulated approvals are disabled (`HTTP 403`), so officers sign real WebAuthn assertions verified against `webauthn_credentials.public_key_cose` (unless explicit PEM test keys are supplied via `BOB_SIGNING_PRIVATE_KEY_PEM` / `CAROL_SIGNING_PRIVATE_KEY_PEM`).
+5. **Optional `RISK_REVIEWER` Provisioning (`V10.1.5`):**
    - Reviewer identities are never hardcoded in source files. Generate a `scrypt` password hash, provision a `users` row with `role = 'RISK_REVIEWER'`, and configure `RISK_REVIEWER_USERNAME` + `RISK_REVIEWER_PASSWORD_HASH` (or `RISK_REVIEWER_CREDENTIALS`).
 
 ---
@@ -248,19 +255,29 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
 
 ## Demo Instructions
 
-1. **Start the FastAPI Application Server:**
+> Demo fixture seeding (`seed_demo_data()`), fallback operator/database passwords, pre-seeded demo bearer tokens, and deterministic WebAuthn key simulation require explicit `DEMO_MODE=true` (and are blocked against PayPal production endpoints).
+
+1. **Enable Local Sandbox Demo Mode in `.env`:**
+   ```ini
+   DEMO_MODE=true
+   PAYPAL_PROVIDER_MODE=SIMULATOR
+   PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+   STRICT_CRYPTO_ENFORCEMENT=true
+   # Provide 64-hex secrets for ATTESTATION_SECRET, BLIND_INDEX_KEY, and AUTH_ASSERTION_KEY
+   ```
+2. **Start the FastAPI Application Server:**
    ```bash
    uvicorn backend.main:app --host 127.0.0.1 --port 8000
    ```
-2. **Open the Console:** Navigate to `http://127.0.0.1:8000/`.
-3. **Sign In & Explore Roles:**
+3. **Open the Console:** Navigate to `http://127.0.0.1:8000/`.
+4. **Sign In & Explore Roles:**
    - Default demo operator credentials can be overridden in `.env` (`ALICE_PASSWORD`, `BOB_PASSWORD`, `CAROL_PASSWORD`, `DAVE_PASSWORD`, `EVE_PASSWORD`; see `backend/main.py` for non-production demo usernames).
    - **AP Maker (`alice_ap_maker`):** Create a draft payout batch, upload or capture a 16 kHz Mono PCM16 WAV voice sample (or record locally using `python record_fresh_voice.py` into gitignored `audio_samples/`), and attempt finalization.
    - **Risk Reviewer (`RISK_REVIEWER`):** If `ACOUSTIC_FFT_HEURISTIC_V1` returns `NEEDS_REVIEW`, authenticate as an explicitly provisioned `RISK_REVIEWER` account to inspect acoustic metrics, SHA-256/spectral fingerprints, and record `APPROVE_WITH_REVIEW` or `REJECT`.
    - **Treasury Officers (`bob_checker`, `carol_checker_two`):** Complete WebAuthn/P-256 dual-officer approvals on finalized batches and trigger `/api/outbox/process` in `SIMULATOR` or `SANDBOX_API` mode.
-4. **Run the Automated Test Suite (Disposable Database Required):**
+5. **Run the Automated Test Suite (Disposable Database Required):**
    ```bash
-   pytest tests/test_database_audio_gate_migration.py tests/test_v10_1_5_manual_audio_review.py tests/test_paypal_sandbox_api.py
+   pytest tests/test_release_security_startup.py tests/test_database_audio_gate_migration.py tests/test_v10_1_5_manual_audio_review.py tests/test_paypal_sandbox_api.py
    ```
    > **Warning:** Several integration test modules recreate/seed database fixtures; always run `pytest` against a dedicated disposable database, never a persistent environment containing data you want to keep.
 
@@ -270,7 +287,7 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
 
 ### Current Limitations
 - **Heuristic Voice Detector Only:** `ACOUSTIC_FFT_HEURISTIC_V1` is a synthetic/spectral baseline (`spectral_flatness`, `> 3500 Hz` energy ratio, WADA SNR) with no neural anti-spoofing checkpoint (`AASIST`), yielding high manual-review rates (`NEEDS_REVIEW`) on real human microphone captures.
-- **No Hardware FIDO2 Device Flow Live:** WebAuthn P-256 signature verification is enforced cryptographically in backend + DB using deterministic test keypairs (`OFFICER_PRIVATE_KEYS`) for demo/testing rather than physical USB security keys in a browser ceremony.
+- **No Hardware FIDO2 Device Flow Live:** WebAuthn P-256 signature verification is enforced cryptographically in backend + DB using explicit `DEMO_MODE=true` test keypairs or environment-supplied PEM keys rather than physical USB security keys in a browser ceremony.
 - **Local File Replay Registry:** Anti-replay deduplication stores hashes in a local lock-guarded JSON file (`audio_hash_registry.json`) rather than a distributed store.
 - **No End-to-End Live PayPal Dollar Payout Completed Yet:** Live Sandbox OAuth and schema gates are verified, while full manual-review -> dual-officer approval -> live Sandbox `/v1/payments/payouts` settlement remains to be completed cleanly end-to-end.
 
