@@ -1,0 +1,54 @@
+# Environment and local secret configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+private_keys/
+
+# Database backups, local cluster binaries, and live data directories
+backups/
+*.dump
+*.bak
+*.sql.bak
+pgdata/
+pgsql/
+
+# Audio replay registry, vault captures, and uploaded personal voice samples
+audio_hash_registry.json*
+audio_vault/
+audio_samples/
+
+# Python cache & virtualenvs
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+
+# Operational logs, scratch tooling, and local machine setup helpers
+*.log
+scratch/
+scratch_*.py
+test_output/
+setup_pg18.py
+run_migration.py
+get_links.py
+capture_screenshots.py
+build_index_html.py
+build_migration.py
+write_test_suite.py
+
+# Internal development/audit session reports (local environment logs & sprint plans)
+PROJECT_PLAN*.md
+DeepfakeShield_Blueprint*.md
+PAYPAL_SANDBOX_*.md
+CRITICAL_AUDIO_*.md
+DATABASE_AUDIO_*.md
+V10_1_*.md

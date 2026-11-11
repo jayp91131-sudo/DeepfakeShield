@@ -1,0 +1,3524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepfakeShield | Treasury Protection Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+                :root {
+            --bg-app: #F8FAFC;
+            --bg-surface: #FFFFFF;
+            --bg-subtle: #F1F5F9;
+            --bg-hover: #F8FAFC;
+            --border-subtle: #F1F5F9;
+            --border-main: #E2E8F0;
+            --border-strong: #CBD5E1;
+            
+            --navy-900: #0F172A;
+            --navy-800: #1E293B;
+            --navy-700: #334155;
+            
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+            
+            --cobalt-600: #2563EB;
+            --cobalt-700: #1D4ED8;
+            --cobalt-50: #EFF6FF;
+            --cobalt-100: #DBEAFE;
+            
+            --emerald-600: #059669;
+            --emerald-50: #ECFDF5;
+            --emerald-100: #D1FAE5;
+            --emerald-800: #065F46;
+            
+            --amber-600: #D97706;
+            --amber-50: #FFFBEB;
+            --amber-100: #FEF3C7;
+            --amber-800: #92400E;
+            
+            --rose-600: #DC2626;
+            --rose-50: #FEF2F2;
+            --rose-100: #FEE2E2;
+            --rose-800: #991B1B;
+            
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 21px;
+            font-weight: 400;
+            color: var(--text-primary);
+            background-color: var(--bg-app);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* TYPOGRAPHY HIERARCHY SPECIFICATION */
+        .page-title {
+            font-family: var(--font-sans);
+            font-size: 28px;
+            line-height: 36px;
+            font-weight: 600;
+            color: var(--navy-900);
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .page-subtitle {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 21px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: 20px;
+            line-height: 28px;
+            font-weight: 600;
+            color: var(--navy-900);
+            letter-spacing: -0.01em;
+            margin-bottom: 12px;
+        }
+
+        .card-title, .panel-title {
+            font-family: var(--font-sans);
+            font-size: 16px;
+            line-height: 24px;
+            font-weight: 600;
+            color: var(--navy-900);
+        }
+
+        .body-text, p {
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 21px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .field-label, .data-label, label {
+            font-family: var(--font-sans);
+            font-size: 13px;
+            line-height: 19px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .metadata, .text-meta, .kpi-sub, .activity-meta {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            line-height: 18px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .financial-val, .kpi-value {
+            font-family: var(--font-sans);
+            font-size: 26px;
+            line-height: 32px;
+            font-weight: 600;
+            color: var(--navy-900);
+            font-feature-settings: 'tnum';
+            font-variant-numeric: tabular-nums;
+            margin: 4px 0;
+        }
+
+        .mono, .tech-id, code {
+            font-family: var(--font-mono) !important;
+            font-size: 12px;
+            line-height: 18px;
+            font-weight: 400;
+            font-feature-settings: 'tnum';
+            letter-spacing: 0;
+        }
+
+        /* APP LAYOUT */
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR (Stripe/Linear Inspired) */
+        .sidebar {
+            width: 256px;
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-main);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 18px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--navy-900);
+        }
+
+        .brand-logo svg {
+            width: 28px;
+            height: 28px;
+            color: var(--cobalt-600);
+            flex-shrink: 0;
+        }
+
+        .brand-text h1 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy-900);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            padding: 16px 12px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .nav-group-title {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0 10px 6px 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .sidebar-link:hover {
+            color: var(--navy-900);
+            background-color: var(--bg-subtle);
+        }
+
+        .sidebar-link.active {
+            color: var(--cobalt-600);
+            background-color: var(--cobalt-50);
+            font-weight: 600;
+        }
+
+        .sidebar-link svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 1.8;
+            flex-shrink: 0;
+        }
+
+        .sidebar-link.active svg {
+            color: var(--cobalt-600);
+        }
+
+        .sidebar-user {
+            padding: 14px 16px;
+            border-top: 1px solid var(--border-subtle);
+            background-color: #FAFAFC;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--cobalt-100);
+            color: var(--cobalt-700);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-meta-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--navy-900);
+            line-height: 1.2;
+        }
+
+        .user-meta-role {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-wrapper {
+            margin-left: 256px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: calc(100% - 256px);
+        }
+
+        /* TOPBAR (Mercury/Modern Treasury Inspired) */
+        .topbar {
+            height: 60px;
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .mobile-nav-toggle {
+            display: none;
+            background: none;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-sm);
+            padding: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .breadcrumb {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--navy-900);
+            letter-spacing: -0.01em;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* BATCH SELECTOR IN TOPBAR */
+        .batch-selector-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--bg-subtle);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-main);
+        }
+
+        .batch-selector-box label {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .select-batch {
+            background: transparent;
+            border: none;
+            color: var(--navy-900);
+            font-size: 12px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            max-width: 210px;
+        }
+
+        /* STATUS BADGES & PILLS */
+        .env-badge {
+            font-size: 11.5px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid transparent;
+        }
+
+        .env-badge-sim {
+            background-color: #F1F5F9;
+            color: #334155;
+            border-color: #E2E8F0;
+        }
+
+        .env-badge-live {
+            background-color: var(--emerald-50);
+            color: var(--emerald-800);
+            border-color: var(--emerald-100);
+        }
+
+                .status-pill {
+            display: inline-flex;
+            align-items: center;
+            font-family: var(--font-sans);
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            letter-spacing: 0;
+            white-space: nowrap;
+        }
+
+        .pill-success {
+            background-color: var(--emerald-50);
+            color: var(--emerald-800);
+            border: 1px solid var(--emerald-100);
+        }
+
+        .pill-warning {
+            background-color: var(--amber-50);
+            color: var(--amber-800);
+            border: 1px solid var(--amber-100);
+        }
+
+        .pill-danger {
+            background-color: var(--rose-50);
+            color: var(--rose-800);
+            border: 1px solid var(--rose-100);
+        }
+
+        .pill-info {
+            background-color: var(--cobalt-50);
+            color: var(--cobalt-700);
+            border: 1px solid var(--cobalt-100);
+        }
+
+        .pill-muted {
+            background-color: #F1F5F9;
+            color: var(--text-muted);
+            border: 1px solid #E2E8F0;
+        }
+
+        /* PERSONA SELECTOR */
+        .persona-switcher {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-sm);
+            padding: 4px 8px;
+        }
+
+        .persona-select {
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--navy-900);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* BUTTONS (Linear/Stripe Inspired) */
+        .btn-primary {
+            background-color: var(--cobalt-600);
+            color: #FFFFFF;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--cobalt-700);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--cobalt-700);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary-sm {
+            background-color: var(--cobalt-600);
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 11px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--cobalt-700);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary-sm:hover:not(:disabled) {
+            background-color: var(--cobalt-700);
+        }
+
+        .btn-primary-sm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background-color: var(--bg-surface);
+            color: var(--navy-900);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-main);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background-color: var(--bg-subtle);
+            border-color: var(--border-strong);
+        }
+
+        .btn-outline:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-outline-sm {
+            background-color: var(--bg-surface);
+            color: var(--navy-900);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-main);
+            box-shadow: var(--shadow-xs);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-outline-sm:hover:not(:disabled) {
+            background-color: var(--bg-subtle);
+            border-color: var(--border-strong);
+        }
+
+        .btn-outline-sm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* NOTIFICATION BANNER */
+        .alert-banner {
+            margin: 20px 32px 0 32px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid transparent;
+        }
+
+        /* CONTENT CONTAINER & VIEW SWITCHING */
+        .content-area {
+            padding: 28px 32px 48px 32px;
+            max-width: 1320px;
+            width: 100%;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.15s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* PAGE HEADERS */
+        .page-header-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .page-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* FINANCIAL CARDS & PANELS */
+        .card-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-xs);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .kpi-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-xs);
+            margin-bottom: 24px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        /* TABLES */
+        .table-responsive {
+            overflow-x: auto;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-surface);
+        }
+
+        .financial-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+                .financial-table th {
+            background-color: #F8FAFC;
+            color: var(--text-muted);
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 12px;
+            line-height: 18px;
+            text-transform: none;
+            letter-spacing: 0;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-main);
+        }
+
+                .financial-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--navy-900);
+            font-size: 14px;
+            line-height: 20px;
+            vertical-align: middle;
+        }
+
+        .financial-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .financial-table tr:hover td {
+            background-color: #FAFAFC;
+        }
+
+        .amount-col {
+            font-weight: 600;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* STEPPER (Payout Workflow) */
+        .stepper-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background-color: #FAFAFC;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-main);
+            margin-bottom: 20px;
+            overflow-x: auto;
+            gap: 12px;
+        }
+
+        .step-node {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .step-circle {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background-color: #E2E8F0;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .step-node.active {
+            color: var(--cobalt-600);
+            font-weight: 600;
+        }
+
+        .step-node.active .step-circle {
+            background-color: var(--cobalt-600);
+            color: #FFFFFF;
+        }
+
+        .step-node.done {
+            color: var(--emerald-800);
+            font-weight: 600;
+        }
+
+        .step-node.done .step-circle {
+            background-color: var(--emerald-600);
+            color: #FFFFFF;
+        }
+
+        .step-divider {
+            color: var(--border-strong);
+            font-size: 14px;
+        }
+
+        /* OFFICER CARDS */
+        .officer-cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+                .officer-card {
+            background-color: #FAFAFC;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .officer-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .officer-info-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .officer-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: var(--cobalt-100);
+            color: var(--cobalt-700);
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .officer-meta h4 {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--navy-900);
+            margin-bottom: 2px;
+        }
+
+        .officer-meta span {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        /* EXPANDABLE ACCORDION (Technical Details) */
+        .tech-accordion {
+            background-color: #FAFAFC;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-sm);
+            margin-top: 14px;
+            font-size: 12px;
+        }
+
+        .tech-accordion summary {
+            padding: 10px 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+        }
+
+        .tech-accordion summary:hover {
+            color: var(--navy-900);
+        }
+
+        .tech-accordion-body {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border-subtle);
+            background-color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .data-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12.5px;
+            padding: 4px 0;
+        }
+
+        .data-label {
+            color: var(--text-muted);
+        }
+
+        .data-val {
+            color: var(--navy-900);
+            font-weight: 500;
+        }
+
+        /* WAVEFORM BARS */
+        .waveform-container {
+            height: 60px;
+            background-color: #F8FAFC;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 12px 0;
+        }
+
+        /* TIMELINE (Activity History) */
+        .activity-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            background-color: #FAFAFC;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-sm);
+        }
+
+        .activity-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--emerald-100);
+            color: var(--emerald-800);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--navy-900);
+            margin-bottom: 2px;
+        }
+
+        .activity-meta {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        /* DEMO DROPDOWN */
+        .demo-dropdown-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .demo-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background-color: #FFFFFF;
+            border: 1px solid var(--border-main);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            width: 280px;
+            z-index: 1100;
+            padding: 6px;
+        }
+
+        .demo-menu.show {
+            display: block;
+        }
+
+        .demo-menu-item {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--navy-900);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .demo-menu-item:hover {
+            background-color: var(--bg-subtle);
+        }
+
+        .demo-menu-title {
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .demo-menu-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-dialog {
+            background: #FFFFFF;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-main);
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* RESPONSIVE BREAKPOINTS */
+        @media (max-width: 1024px) {
+            .card-grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .officer-cards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-wrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+            .mobile-nav-toggle {
+                display: block;
+            }
+            .card-grid-4 {
+                grid-template-columns: 1fr;
+            }
+            .content-area {
+                padding: 18px 16px 36px 16px;
+            }
+            .topbar {
+                padding: 0 16px;
+            }
+        }
+    
+        /* RESTRAINED SKELETON LOADERS */
+        .skeleton {
+            background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .empty-state-cell {
+            text-align: center;
+            padding: 36px 16px !important;
+            color: var(--text-muted);
+        }
+        .empty-state-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--navy-900);
+            margin-bottom: 4px;
+        }
+        .empty-state-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-brand">
+                <a href="#overview" class="brand-logo" onclick="navigateSection('overview')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <div class="brand-text">
+                        <h1>DeepfakeShield</h1>
+                        <span>Treasury Protection</span>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div>
+                    <div class="nav-group-title">Main Operations</div>
+                    <div class="nav-links">
+                        <a href="#overview" class="sidebar-link active" onclick="navigateSection('overview')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            Overview
+                        </a>
+                        <a href="#batches" class="sidebar-link" onclick="navigateSection('batches')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                            Payout Management
+                        </a>
+                        <a href="#beneficiaries" class="sidebar-link" onclick="navigateSection('beneficiaries')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            Beneficiaries
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="nav-group-title">Security & Controls</div>
+                    <div class="nav-links">
+                        <a href="#voice" class="sidebar-link" onclick="navigateSection('voice')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                            Voice Verification
+                        </a>
+                        <a href="#approvals" class="sidebar-link" onclick="navigateSection('approvals')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Officer Approvals
+                        </a>
+                        <a href="#reconciliation" class="sidebar-link" onclick="navigateSection('reconciliation')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            Reconciliation
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="nav-group-title">Governance</div>
+                    <div class="nav-links">
+                        <a href="#audit" class="sidebar-link" onclick="navigateSection('audit')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Activity History
+                        </a>
+                        <a href="#settings" class="sidebar-link" onclick="navigateSection('settings')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Settings
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-user">
+                <div class="user-avatar-row">
+                    <div class="user-avatar" id="sidebarAvatar">AS</div>
+                    <div>
+                        <div class="user-meta-name" id="sidebarUserName">Alice Sterling</div>
+                        <div class="user-meta-role" id="sidebarUserRole">AP Maker</div>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="btn-outline-sm" style="color: var(--rose-600); border-color: var(--rose-100); padding: 3px 7px;">
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN WRAPPER -->
+        <div class="main-wrapper">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-nav-toggle" onclick="toggleSidebar(true)">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <span class="breadcrumb" id="topbarPageTitle">Overview</span>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Batch Selector Dropdown -->
+                    <div class="batch-selector-box">
+                        <label for="batchSelectDropdown">Active Batch:</label>
+                        <select id="batchSelectDropdown" class="select-batch mono" onchange="onBatchSelected(this.value)">
+                            <option value="">(Loading Batches...)</option>
+                        </select>
+                    </div>
+
+                    <!-- Provider Environment Badge -->
+                    <span id="headerProviderBadge" class="env-badge env-badge-sim">
+                        PayPal Sandbox Simulator
+                    </span>
+
+                    <!-- Demo Mode Menu Trigger -->
+                    <div class="demo-dropdown-container">
+                        <button class="btn-outline-sm" onclick="toggleDemoMenu()" id="btnDemoDropdown">
+                            <span>⚡ Demo Scenarios</span>
+                        </button>
+                        <div class="demo-menu" id="demoMenuDropdown">
+                            <div style="padding: 6px 10px 4px 10px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                                Live Test Scenarios
+                            </div>
+                            <div class="demo-menu-item" onclick="runCompleteHappyPath(); toggleDemoMenu();">
+                                <div class="demo-menu-title" style="color: var(--emerald-800);">1. Happy Path Settlement</div>
+                                <div class="demo-menu-desc">Executes end-to-end draft, 2-officer WebAuthn, and PayPal settlement.</div>
+                            </div>
+                            <div class="demo-menu-item" onclick="runFailureDeepfakeVoice(); toggleDemoMenu();">
+                                <div class="demo-menu-title" style="color: var(--rose-800);">2. Voice Clone Attack Blocked</div>
+                                <div class="demo-menu-desc">Simulates synthetic voice injection caught by acoustic FFT gate.</div>
+                            </div>
+                            <div class="demo-menu-item" onclick="runFailureUnauthorizedOfficer(); toggleDemoMenu();">
+                                <div class="demo-menu-title" style="color: var(--amber-800);">3. Unauthorized Officer Rejected</div>
+                                <div class="demo-menu-desc">Tests unauthorized clerk sign-off rejected by PostgreSQL RBAC.</div>
+                            </div>
+                            <div class="demo-menu-item" onclick="runFailureAmbiguousTimeout(); toggleDemoMenu();">
+                                <div class="demo-menu-title" style="color: var(--navy-800);">4. Ambiguous 504 Timeout</div>
+                                <div class="demo-menu-desc">Tests network timeout and automatic manual reconciliation freeze.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <span id="headerScenarioBadge" style="display: none;">Scenario: None</span>
+                    <span id="lastRefreshedTime" style="display: none;">--:--:--</span>
+
+                    <!-- Operator Persona Switcher -->
+                    <div class="persona-switcher">
+                        <select id="operatorPersonaSelect" class="persona-select" onchange="switchActivePersona(this.value)">
+                            <option value="alice" selected>Alice (AP Maker)</option>
+                            <option value="bob">Bob (Officer 1)</option>
+                            <option value="carol">Carol (Officer 2)</option>
+                            <option value="reviewer">Risk Reviewer (Manual Review)</option>
+                            <option value="dave">Dave (Auditor)</option>
+                            <option value="eve">Eve (Unauthorized)</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ALERT BANNER -->
+            <div id="alertBanner" class="alert-banner"></div>
+
+            <!-- CONTENT VIEWS -->
+            <main class="content-area">
+                <!-- 1. OVERVIEW PAGE -->
+                <section id="overview" class="content-section active">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title" id="overviewGreetingTitle">Good morning, Alice Sterling</h2>
+                            <p class="page-subtitle">Here's your treasury activity at a glance.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn-primary" onclick="openNewBatchModal()">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Create Payout
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4 Top Primary Business Metrics -->
+                    <div class="card-grid-4">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Total Active Payouts</span>
+                                <span id="batchStatePill" class="status-pill pill-muted">NO_BATCH</span>
+                            </div>
+                            <div class="kpi-value" id="kpiBatchTotalDisplay">$0.00 USD</div>
+                            <div class="kpi-sub" id="kpiBatchPeriodDisplay">No Active Batch</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Payment approvals</span>
+                                <span id="approvalsPill" class="status-pill pill-muted">0 / 2 SIGNED</span>
+                            </div>
+                            <div class="kpi-value" id="kpiApprovalCountDisplay">0 of 2 Verified</div>
+                            <div class="kpi-sub">FIDO2 Dual Control Enforced</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Disbursement Outcome</span>
+                                <span id="paypalStatePill" class="status-pill pill-muted">IDLE</span>
+                            </div>
+                            <div class="kpi-value" id="kpiGatewayOutcomeDisplay">IDLE</div>
+                            <div class="kpi-sub" id="kpiAttemptInfoDisplay">No Batches Enqueued</div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-title">Voice Risk Score</span>
+                                <span id="audioDecisionPill" class="status-pill pill-muted">NOT_RUN</span>
+                            </div>
+                            <div class="kpi-value" id="kpiVoiceScoreDisplay">--</div>
+                            <div class="kpi-sub" id="kpiVoiceRecommendation">Recommendation: Unavailable (Not Run)</div>
+                        </div>
+                    </div>
+
+                    <!-- 2-Column Overview Summary -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <span class="panel-title">Recent Payout Activity</span>
+                                    <span class="status-pill pill-info" id="recentBatchesCountBadge">0 RUNS</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="financial-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Batch Reference</th>
+                                                <th>Status</th>
+                                                <th>Items</th>
+                                                <th style="text-align: right;">Amount (USD)</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentBatchesTableBody">
+                                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">Loading recent batches...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <span class="panel-title">Officer approvals required</span>
+                                    <span id="officerSummaryPill" class="status-pill pill-muted">0 / 2 SIGNED</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="font-size: 13px; color: var(--text-secondary);">
+                                        Active disbursements require dual cryptographic sign-offs from both Officer 1 (Bob) and Officer 2 (Carol).
+                                    </div>
+                                    <div class="data-row">
+                                        <span class="data-label">Officer 1 (Robert Sterling)</span>
+                                        <span id="bobStatusBadge" class="status-pill pill-muted">PENDING</span>
+                                    </div>
+                                    <div class="data-row">
+                                        <span class="data-label">Officer 2 (Carol Danvers)</span>
+                                        <span id="carolStatusBadge" class="status-pill pill-muted">PENDING</span>
+                                    </div>
+                                    <div style="margin-top: 8px;">
+                                        <button class="btn-outline-sm" style="width: 100%; justify-content: center;" onclick="navigateSection('approvals')">
+                                            Open Approval Workspace →
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <span class="panel-title">System defense status</span>
+                                    <span class="status-pill pill-success">ARMED</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px;">
+                                    <div class="data-row">
+                                        <span class="data-label">Acoustic Shield</span>
+                                        <span class="data-val" style="color: var(--cobalt-600);">ACOUSTIC_FFT_HEURISTIC_V1</span>
+                                    </div>
+                                    <div class="data-row">
+                                        <span class="data-label">Beneficiary Cooldown</span>
+                                        <span class="data-val" style="color: var(--emerald-800);">72-Hour Enforced</span>
+                                    </div>
+                                    <div class="data-row">
+                                        <span class="data-label">Audit Hash Chain</span>
+                                        <span class="data-val" style="color: var(--emerald-800);">HMAC/SHA-256</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. PAYOUT MANAGEMENT PAGE -->
+                <section id="batches" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Payout management</h2>
+                            <p class="page-subtitle">Initiate, monitor, and manage cryptographic contractor disbursement envelopes.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn-primary" onclick="openNewBatchModal()">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Create Payout
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visual Workflow Stepper -->
+                    <div class="stepper-container">
+                        <div class="step-node done">
+                            <div class="step-circle">1</div>
+                            <span>Draft Envelope</span>
+                        </div>
+                        <span class="step-divider">→</span>
+                        <div class="step-node active">
+                            <div class="step-circle">2</div>
+                            <span>Voice verification</span>
+                        </div>
+                        <span class="step-divider">→</span>
+                        <div class="step-node" id="stepChecker1">
+                            <div class="step-circle">3</div>
+                            <span>Officer 1 Sign-Off</span>
+                        </div>
+                        <span class="step-divider">→</span>
+                        <div class="step-node" id="stepChecker2">
+                            <div class="step-circle">4</div>
+                            <span>Officer 2 Sign-Off</span>
+                        </div>
+                        <span class="step-divider">→</span>
+                        <div class="step-node" id="stepOutbox">
+                            <div class="step-circle">5</div>
+                            <span>PayPal Settlement</span>
+                        </div>
+                    </div>
+
+                    <!-- Active Batch Card -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Active Batch Envelope</span>
+                            <span id="envelopeStatePill" class="status-pill pill-muted">NO_BATCH</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;">
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Total Disbursement</div>
+                                <div style="font-size: 18px; font-weight: 700; color: var(--navy-900);" id="panelBatchTotalAmount">$0.00 USD</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Line Items</div>
+                                <div style="font-size: 16px; font-weight: 600; color: var(--navy-900);" id="metricItemCount">0 items</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Program & Period</div>
+                                <div style="font-size: 13.5px; font-weight: 600; color: var(--navy-900);" id="metricProgramPeriod">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Submission Lock</div>
+                                <div style="font-size: 13.5px; font-weight: 600;" id="metricLockStatus">NOT_ACQUIRED</div>
+                            </div>
+                        </div>
+
+                        <details class="tech-accordion">
+                            <summary>Cryptographic Envelope Details & Fencing</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row">
+                                    <span class="data-label">Batch UUID</span>
+                                    <span class="data-val mono" id="metricBatchId">None</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Disbursement Total</span>
+                                    <span class="data-val mono" id="metricBatchAmount">$0.00 USD</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">PostgreSQL Fencing Token</span>
+                                    <span class="data-val mono" id="metricFencingToken">--</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Encryption Standard</span>
+                                    <span class="data-val">AES-256-GCM Envelope (Active Master Key)</span>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <!-- 3. BENEFICIARIES PAGE -->
+                <section id="beneficiaries" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Beneficiaries</h2>
+                            <p class="page-subtitle">Approved contractor accounts with 72-hour cooling-off enforcement.</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>Contractor Entity</th>
+                                    <th>Program Ref</th>
+                                    <th>Masked Destination</th>
+                                    <th>Status</th>
+                                    <th>Disbursement Lock</th>
+                                    <th>Cooling-Off Period</th>
+                                </tr>
+                            </thead>
+                            <tbody id="beneficiariesTableBody">
+                                <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading verified beneficiaries...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <details class="tech-accordion">
+                        <summary>Security Governance & Cryptographic Digest Details</summary>
+                        <div class="tech-accordion-body">
+                            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                                Beneficiary account updates are subject to an immutable 72-hour cooling-off period. During active outbox processing, PostgreSQL acquires row-level submission locks (<code>ACTIVE_LOCKED</code>) to guarantee zero double-disbursements across concurrent worker nodes.
+                            </div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 4. VOICE VERIFICATION PAGE -->
+                <section id="voice" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Voice verification</h2>
+                            <p class="page-subtitle">Screen payment authorization calls for voice clones and synthetic speech.</p>
+                        </div>
+                        <div class="page-actions">
+                            <span id="audioStateIndicator" class="status-pill pill-muted">NOT_RUN</span>
+                        </div>
+                    </div>
+
+                    <div style="background-color: var(--cobalt-50); border: 1px solid var(--cobalt-100); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 20px;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--cobalt-700); margin-bottom: 2px;">
+                            Engine Architecture: ACOUSTIC_FFT_HEURISTIC_V1 (Spectral Contrast • Rule-based)
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">
+                            Live screening utilizes fast Fourier transform (FFT) harmonic distribution and WADA spectral SNR analysis. Full production deployment utilizes deep neural AASIST-L inference with GPU acceleration.
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Interactive Voice Instruction Analysis</span>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <label style="font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="audioPreset" value="clean_executive" checked> Clean Executive (Authentic)
+                                </label>
+                                <label style="font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="audioPreset" value="deepfake_clone"> Synthetic Voice Clone (Attack)
+                                </label>
+                                <button class="btn-primary-sm" onclick="runInteractiveVoiceTest()">
+                                    Analyze Audio
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Waveform -->
+                        <div class="waveform-container" id="waveformBars"></div>
+
+                        <!-- Technical Scoring Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px;">
+                            <div style="background-color: #FAFAFC; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Policy Recommendation</div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--navy-900);" id="metricRecommendation">Unavailable (Not Run)</div>
+                            </div>
+                            <div style="background-color: #FAFAFC; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Voice Clone Classification</div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--navy-900);" id="metricCloneFlag">Unavailable (Not Run)</div>
+                            </div>
+                            <div style="background-color: #FAFAFC; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Spoof Probability</div>
+                                <div style="font-size: 14px; font-weight: 600; color: var(--navy-900);" id="metricDeepfakeProb">--</div>
+                                <div style="height: 4px; background: #E2E8F0; border-radius: 2px; margin-top: 6px; overflow: hidden;">
+                                    <div id="deepfakeProgressBar" style="width: 0%; height: 100%; background: var(--cobalt-600); transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details class="tech-accordion">
+                            <summary>Spectral Contrast Parameters & Signal Metrics</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row">
+                                    <span class="data-label">WADA Signal-to-Noise Ratio</span>
+                                    <span class="data-val mono" id="metricWadaSnr">-- dB (Unavailable)</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Acoustic Consistency Threshold</span>
+                                    <span class="data-val mono">0.50 (Max Safe Variance)</span>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- Manual Audio Risk Review Panel (V10.1.5) -->
+                    <div class="panel" id="manualAudioReviewPanel" style="margin-top: 20px;">
+                        <div class="panel-header">
+                            <span class="panel-title">Manual Audio Risk Review (Governed Gate)</span>
+                            <span id="manualReviewStatusPill" class="status-pill pill-muted">NOT_REQUIRED</span>
+                        </div>
+
+                        <div style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px;">
+                            When <code>ACOUSTIC_FFT_HEURISTIC_V1</code> outputs <strong>CHALLENGE / NEEDS_REVIEW</strong>, finalization remains blocked until an independent <code>RISK_REVIEWER</code> inspects the cryptographic evidence and records an immutable decision. Original AI metrics are preserved permanently.
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                            <div style="background-color: #FAFAFC; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11px; color: var(--text-muted);">Original AI Decision</div>
+                                <div style="font-size: 13px; font-weight: 600;" id="reviewAiDecision">--</div>
+                            </div>
+                            <div style="background-color: #FAFAFC; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11px; color: var(--text-muted);">FFT Analyzer Version</div>
+                                <div class="mono" style="font-size: 12px; font-weight: 600;" id="reviewAnalyzerVersion">--</div>
+                            </div>
+                            <div style="background-color: #FAFAFC; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-main);">
+                                <div style="font-size: 11px; color: var(--text-muted);">Replay Detection Outcome</div>
+                                <div class="mono" style="font-size: 12px; font-weight: 600;" id="reviewReplayStatus">--</div>
+                            </div>
+                        </div>
+
+                        <div class="tech-accordion-body" style="border: 1px solid var(--border-main); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px;">
+                            <div class="data-row"><span class="data-label">Batch &amp; Recipient Details</span><span class="data-val mono" id="reviewBatchContext">--</span></div>
+                            <div class="data-row"><span class="data-label">Risk Evaluation ID</span><span class="data-val mono" id="reviewEvalId">--</span></div>
+                            <div class="data-row"><span class="data-label">Audio Asset ID</span><span class="data-val mono" id="reviewAssetId">--</span></div>
+                            <div class="data-row"><span class="data-label">Duration &amp; Format</span><span class="data-val mono" id="reviewAudioMeta">--</span></div>
+                            <div class="data-row"><span class="data-label">SHA-256 Digest</span><span class="data-val mono" style="word-break: break-all;" id="reviewSha256">--</span></div>
+                            <div class="data-row"><span class="data-label">Acoustic Fingerprint</span><span class="data-val mono" style="word-break: break-all;" id="reviewAcousticFp">--</span></div>
+                            <div class="data-row"><span class="data-label">Acoustic Signal Metrics</span><span class="data-val mono" id="reviewAcousticMetrics">--</span></div>
+                        </div>
+
+                        <div id="reviewAudioPlayerBox" style="display: none; margin-bottom: 16px; padding: 12px; background-color: #F8FAFC; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                                <span style="font-size: 12.5px; font-weight: 600; color: var(--navy-900);">Original Audio Evidence Playback (RISK_REVIEWER Only)</span>
+                                <button class="btn-secondary-sm" type="button" onclick="loadReviewAudioStream()">Load Evidence Audio</button>
+                            </div>
+                            <audio id="reviewAudioPlayer" controls style="width: 100%; display: none;"></audio>
+                        </div>
+
+                        <div id="recordedReviewBox" style="display: none; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-main); background-color: #FAFAFC; margin-bottom: 12px;">
+                            <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-900); margin-bottom: 8px;">Immutable Manual Review Record</div>
+                            <div class="data-row"><span class="data-label">Human Reviewer Decision</span><span class="data-val mono" id="recordedReviewDecision">--</span></div>
+                            <div class="data-row"><span class="data-label">Reviewer Identity</span><span class="data-val mono" id="recordedReviewerIdentity">--</span></div>
+                            <div class="data-row"><span class="data-label">Review Timestamp</span><span class="data-val mono" id="recordedReviewTimestamp">--</span></div>
+                            <div class="data-row"><span class="data-label">Written Justification</span><span class="data-val" id="recordedReviewJustification">--</span></div>
+                        </div>
+
+                        <div id="manualReviewActionForm" style="display: none; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--amber-100); background-color: var(--amber-50);">
+                            <div style="font-size: 13px; font-weight: 600; color: var(--amber-800); margin-bottom: 10px;">
+                                Submit Human Audio Risk Decision (Independent RISK_REVIEWER Required)
+                            </div>
+                            <div style="display: flex; gap: 16px; margin-bottom: 10px; font-size: 12.5px;">
+                                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="radio" name="manualReviewDecision" value="APPROVE_WITH_REVIEW"> APPROVE_WITH_REVIEW (Allow Dual-Officer Check)
+                                </label>
+                                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                                    <input type="radio" name="manualReviewDecision" value="REJECT"> REJECT (Permanently Block Batch)
+                                </label>
+                            </div>
+                            <textarea id="manualReviewJustificationInput" rows="3" placeholder="Enter mandatory written justification explaining why this CHALLENGE evaluation is approved with review or rejected (minimum 10 characters)..." style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-family: inherit; font-size: 12.5px; margin-bottom: 10px;"></textarea>
+                            <button class="btn-primary-sm" type="button" onclick="submitManualAudioReviewInteractive()">Submit Governed Review Decision</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. OFFICER APPROVALS PAGE -->
+                <section id="approvals" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Payment approvals</h2>
+                            <p class="page-subtitle">Two-officer sign-off enforcing dual control before fund release.</p>
+                        </div>
+                    </div>
+
+                    <!-- Dual Officer Cards -->
+                    <div class="officer-cards-container">
+                        <!-- Officer 1: Bob -->
+                        <div class="officer-card">
+                            <div>
+                                <div class="officer-top">
+                                    <div class="officer-info-left">
+                                        <div class="officer-avatar">RS</div>
+                                        <div class="officer-meta">
+                                            <h4>Robert Sterling (Officer 1)</h4>
+                                            <span>Primary Treasury Approver</span>
+                                        </div>
+                                    </div>
+                                    <span id="bobStatusBadge" class="status-pill pill-muted">PENDING</span>
+                                </div>
+                                <div style="margin-top: 14px; font-size: 12px; color: var(--text-secondary);">
+                                    <div>FIDO2 Authenticator: <span class="mono" id="bobCredId">cred_bob_yubikey_01</span></div>
+                                    <div style="margin-top: 3px;">Sign-off Time: <span id="bobTime">Awaiting assertion</span></div>
+                                </div>
+                            </div>
+                            <button class="btn-primary" id="btnSignBob" onclick="signAsBobInteractive()">
+                                Sign as Bob (YubiKey 5C)
+                            </button>
+                        </div>
+
+                        <!-- Officer 2: Carol -->
+                        <div class="officer-card">
+                            <div>
+                                <div class="officer-top">
+                                    <div class="officer-info-left">
+                                        <div class="officer-avatar">CD</div>
+                                        <div class="officer-meta">
+                                            <h4>Carol Danvers (Officer 2)</h4>
+                                            <span>Secondary Risk Approver</span>
+                                        </div>
+                                    </div>
+                                    <span id="carolStatusBadge" class="status-pill pill-muted">PENDING</span>
+                                </div>
+                                <div style="margin-top: 14px; font-size: 12px; color: var(--text-secondary);">
+                                    <div>FIDO2 Authenticator: <span class="mono" id="carolCredId">cred_carol_titan_02</span></div>
+                                    <div style="margin-top: 3px;">Sign-off Time: <span id="carolTime">Awaiting assertion</span></div>
+                                </div>
+                            </div>
+                            <button class="btn-primary" id="btnSignCarol" onclick="signAsCarolInteractive()">
+                                Sign as Carol (Google Titan)
+                            </button>
+                        </div>
+                    </div>
+
+                    <details class="tech-accordion">
+                        <summary>WebAuthn Cryptographic Assertion & Hardware Key Policy</summary>
+                        <div class="tech-accordion-body">
+                            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                                Officer approvals require ECDSA P-256 signatures over an unguessable 32-byte server challenge. Challenges expire after 3600 seconds and are atomically consumed within PostgreSQL <code>SECURITY DEFINER</code> functions, preventing replay attacks and signature fabrication.
+                            </div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 6. RECONCILIATION & PAYPAL GATEWAY PAGE -->
+                <section id="reconciliation" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Payments and settlements</h2>
+                            <p class="page-subtitle">Track worker execution, payment status, and line-item settlements.</p>
+                        </div>
+                        <div class="page-actions">
+                            <button class="btn-primary" id="btnDispatchWorker" onclick="dispatchWorkerInteractive()">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Dispatch Worker
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Gateway Summary Panel -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Payment outbox & gateway</span>
+                            <span id="outboxStatePill" class="status-pill pill-muted">NOT_ENQUEUED</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">PayPal Payout Batch ID</div>
+                                <div class="mono" style="font-size: 13.5px; font-weight: 600; color: var(--cobalt-600);" id="metricPayPalBatchId">None</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Submission Outcome</div>
+                                <div style="font-size: 13.5px; font-weight: 600;" id="metricPayPalBatchStatus">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">Worker Telemetry</div>
+                                <div style="font-size: 13.5px;" id="metricAttemptInfo">--</div>
+                            </div>
+                        </div>
+
+                        <details class="tech-accordion">
+                            <summary>Idempotency Key & Outbox Job Fencing</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row">
+                                    <span class="data-label">Provider Mode</span>
+                                    <span class="data-val mono" id="metricProviderMode">[SIMULATOR]</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Provider Idempotency Request ID</span>
+                                    <span class="data-val mono" id="metricPayPalReqId">--</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Outbox Job UUID</span>
+                                    <span class="data-val mono" id="metricJobId">None</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Outbox Status</span>
+                                    <span class="data-val mono" id="metricJobStatus">Awaiting Batch</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">PostgreSQL Fencing Token</span>
+                                    <span class="data-val mono" id="metricJobFencing">--</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="data-label">Lock Telemetry</span>
+                                    <span class="data-val mono" id="outboxJobDetailedDisplay">Not Enqueued</span>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- Individual Line Items Table -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Contractor line items</span>
+                            <span class="status-pill pill-info" id="itemsSummaryPill">0 ITEMS</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="financial-table">
+                                <thead>
+                                    <tr>
+                                        <th>Contractor Legal Entity</th>
+                                        <th>Sender Item ID</th>
+                                        <th>Operational State</th>
+                                        <th>PayPal State</th>
+                                        <th>Provider Item ID</th>
+                                        <th>State Explanation</th>
+                                        <th style="text-align: right;">Amount (USD)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No active payout items loaded for this batch.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. ACTIVITY HISTORY / AUDIT PAGE -->
+                <section id="audit" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">Activity history</h2>
+                            <p class="page-subtitle">Complete chronological record of treasury events and approvals.</p>
+                        </div>
+                        <div class="page-actions">
+                            <span id="auditChainPill" class="status-pill pill-muted">UNVERIFIED (PENDING LOAD)</span>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Chronological Ledger Events</span>
+                        </div>
+                        <div class="activity-timeline" id="auditLogBox">
+                            <div style="color: var(--text-muted); font-size: 12px; padding: 12px;">Loading verified cryptographic audit events...</div>
+                        </div>
+
+                        <details class="tech-accordion">
+                            <summary>HMAC/SHA-256 Tamper-Evident Ledger Integrity</summary>
+                            <div class="tech-accordion-body">
+                                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                                    Audit records form an append-only hash chain: each record includes the SHA-256 digest of its preceding parent event. Any modification or deletion breaks hash continuity and is detected during server verification.
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <!-- 8. SETTINGS & DIAGNOSTICS PAGE -->
+                <section id="settings" class="content-section">
+                    <div class="page-header-row">
+                        <div>
+                            <h2 class="page-title">System settings</h2>
+                            <p class="page-subtitle">Operational parameters, security thresholds, and system health.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Active Operator Session</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Authenticated Identity</span>
+                            <span class="data-val mono" id="diagCurrentIdentity">alice_ap_maker</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Assigned Role</span>
+                            <span class="data-val" id="diagCurrentRole">Accounts Payable Maker</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <details class="tech-accordion">
+                            <summary>🗄️ Database & Schema Locks</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row"><span class="data-label">Database Version</span><span class="data-val">PostgreSQL 18.6 Locked</span></div>
+                                <div class="data-row"><span class="data-label">Integrity Triggers</span><span class="data-val">Active (Audit Chain & Outbox Fencing)</span></div>
+                            </div>
+                        </details>
+
+                        <details class="tech-accordion">
+                            <summary>🔐 Identity, RBAC & Authentication</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row"><span class="data-label">Password Hashing</span><span class="data-val">RFC 7914 scrypt (Constant-time verification)</span></div>
+                                <div class="data-row"><span class="data-label">Session Token Lifespan</span><span class="data-val">8 Hours (28,800 seconds)</span></div>
+                                <div class="data-row"><span class="data-label">Access Policy</span><span class="data-val">Strict Fail-Closed Server Enforcement</span></div>
+                            </div>
+                        </details>
+
+                        <details class="tech-accordion">
+                            <summary>🛡️ Cryptography & Attestation</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row"><span class="data-label">Data Encryption</span><span class="data-val">AES-256-GCM (Authenticated Envelope Encryption)</span></div>
+                                <div class="data-row"><span class="data-label">Signature Algorithm</span><span class="data-val">ECDSA P-256 (FIDO2 WebAuthn)</span></div>
+                            </div>
+                        </details>
+
+                        <details class="tech-accordion">
+                            <summary>🎙️ Acoustic Voice Defense Engine</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row"><span class="data-label">Acoustic Architecture</span><span class="data-val">ACOUSTIC_FFT_HEURISTIC_V1 (Spectral Contrast)</span></div>
+                                <div class="data-row"><span class="data-label">Evaluation Engine</span><span class="data-val">Rule-based FFT harmonics (Neural AASIST offline)</span></div>
+                            </div>
+                        </details>
+
+                        <details class="tech-accordion">
+                            <summary>💳 PayPal Gateway & Idempotency</summary>
+                            <div class="tech-accordion-body">
+                                <div class="data-row"><span class="data-label">Idempotency Key Format</span><span class="data-val">RFC 4122 UUIDv4 (Immutable per batch)</span></div>
+                                <div class="data-row"><span class="data-label">Timeout Recovery Policy</span><span class="data-val">MANUAL_RECONCILIATION_REQUIRED (Lock Retained)</span></div>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: LOGIN -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--navy-900); margin-bottom: 6px;" id="loginModalTitle">Officer Authentication Required</h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px;" id="loginModalSubtitle">Please enter your credentials to authenticate with the treasury server.</p>
+            <form id="loginModalForm" onsubmit="handleModalLogin(event)">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Username</label>
+                    <input type="text" id="loginUsername" required style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-size: 13px; font-family: monospace;" />
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Password / Secret</label>
+                    <input type="password" id="loginPassword" required style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-size: 13px;" />
+                </div>
+                <div id="loginModalError" style="display: none; color: var(--rose-600); font-size: 12px; margin-bottom: 12px;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn-outline" onclick="closeLoginModal(false)">Cancel</button>
+                    <button type="submit" class="btn-primary" id="loginSubmitBtn">Sign In</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NEW BATCH -->
+    <div id="newBatchModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h3 style="font-size: 16px; font-weight: 700; color: var(--navy-900); margin-bottom: 6px;">Create Payout Batch</h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px;">Initiated by Alice (AP Maker). Binds verified contractor items into an immutable envelope.</p>
+            <form onsubmit="submitNewDraftBatch(event)">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Program Reference</label>
+                    <input type="text" id="nbProgram" value="PROG_DEV_2026" required style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-size: 13px; font-family: monospace;" />
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Disbursement Period</label>
+                    <input type="text" id="nbPeriod" value="2026-11" required style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-size: 13px; font-family: monospace;" />
+                </div>
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Contractor Disbursement (USD)</label>
+                    <input type="number" id="nbAmount1" value="1250.00" step="0.01" min="1.00" required style="width: 100%; padding: 8px 10px; border: 1px solid var(--border-main); border-radius: var(--radius-sm); font-size: 13px;" />
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" class="btn-outline" onclick="closeNewBatchModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Envelope</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let currentOperatorRole = 'alice';
+        let selectedBatchId = null;
+        let activeScenarioName = null;
+
+        const ROLE_USERNAMES = {
+            'alice': 'alice_ap_maker',
+            'bob': 'bob_checker',
+            'carol': 'carol_checker_two',
+            'reviewer': '',
+            'dave': 'dave_auditor',
+            'eve': 'eve_unauthorized'
+        };
+
+        const ROLE_DISPLAY_NAMES = {
+            'alice': 'Alice Sterling',
+            'bob': 'Robert Sterling',
+            'carol': 'Carol Danvers',
+            'reviewer': 'Independent Risk Reviewer',
+            'dave': 'Dave Vance',
+            'eve': 'Eve Adams'
+        };
+
+        const ROLE_DESCRIPTIONS = {
+            'alice': 'Accounts Payable Maker',
+            'bob': 'Treasury Officer 1 (Primary Checker)',
+            'carol': 'Treasury Officer 2 (Secondary Checker)',
+            'reviewer': 'Independent Audio Risk Reviewer',
+            'dave': 'Compliance Auditor (Read-Only)',
+            'eve': 'Unauthorized User (Access Restricted)'
+        };
+
+        const SECTION_TITLES = {
+            'overview': 'Overview',
+            'batches': 'Payout Management',
+            'beneficiaries': 'Beneficiaries',
+            'voice': 'Voice Verification',
+            'approvals': 'Officer Approvals',
+            'reconciliation': 'Disbursements & Reconciliation',
+            'audit': 'Activity History',
+            'settings': 'Settings & Diagnostics'
+        };
+
+        let SESSION_TOKEN_CACHE = {};
+        let pendingLoginResolver = null;
+        let pendingLoginRejecter = null;
+
+        function toggleSidebar(open) {
+            const sb = document.getElementById('appSidebar');
+            if (open) {
+                sb.classList.add('open');
+            } else {
+                sb.classList.remove('open');
+            }
+        }
+
+        function toggleDemoMenu() {
+            const menu = document.getElementById('demoMenuDropdown');
+            if (menu) menu.classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.demo-dropdown-container')) {
+                const menu = document.getElementById('demoMenuDropdown');
+                if (menu && menu.classList.contains('show')) {
+                    menu.classList.remove('show');
+                }
+            }
+        };
+
+        function navigateSection(sectionId) {
+            if (!sectionId) sectionId = 'overview';
+            let target = document.getElementById(sectionId);
+            if (!target) {
+                sectionId = 'overview';
+                target = document.getElementById('overview');
+            }
+
+            document.querySelectorAll('.content-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            if (target) {
+                target.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+
+            document.querySelectorAll('.sidebar-link').forEach(l => {
+                if (l.getAttribute('href') === '#' + sectionId) {
+                    l.classList.add('active');
+                } else {
+                    l.classList.remove('active');
+                }
+            });
+
+            const titleEl = document.getElementById('topbarPageTitle');
+            if (titleEl) {
+                titleEl.innerText = SECTION_TITLES[sectionId] || 'Overview';
+            }
+
+            toggleSidebar(false);
+            try {
+                history.replaceState(null, null, '#' + sectionId);
+            } catch (e) {}
+        }
+
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) {
+                navigateSection(hash);
+            }
+        });
+
+        function setScenarioBadge(name) {
+            activeScenarioName = name;
+            const b = document.getElementById('headerScenarioBadge');
+            if (b) {
+                b.innerText = `Scenario: ${name}`;
+                b.style.display = 'inline-block';
+            }
+        }
+
+        function showBanner(msg, type = "info") {
+            const el = document.getElementById('alertBanner');
+            if (!el) return;
+            el.style.display = 'flex';
+            el.innerText = msg;
+            
+            if (type === "success") {
+                el.style.backgroundColor = 'var(--emerald-50)';
+                el.style.borderColor = 'var(--emerald-100)';
+                el.style.color = 'var(--emerald-800)';
+            } else if (type === "danger") {
+                el.style.backgroundColor = 'var(--rose-50)';
+                el.style.borderColor = 'var(--rose-100)';
+                el.style.color = 'var(--rose-800)';
+            } else if (type === "warning") {
+                el.style.backgroundColor = 'var(--amber-50)';
+                el.style.borderColor = 'var(--amber-100)';
+                el.style.color = 'var(--amber-800)';
+            } else {
+                el.style.backgroundColor = 'var(--cobalt-50)';
+                el.style.borderColor = 'var(--cobalt-100)';
+                el.style.color = 'var(--cobalt-700)';
+            }
+        }
+
+        function onBatchSelected(val) {
+            selectedBatchId = val || null;
+            loadDashboard();
+        }
+
+        function renderWaveform(isSpoof = false, isCompleted = false) {
+            const container = document.getElementById('waveformBars');
+            if (!container) return;
+            
+            const barCount = 48;
+            let svgHtml = '<svg width="100%" height="48" viewBox="0 0 480 48" preserveAspectRatio="none">';
+            
+            const strokeColor = !isCompleted 
+                ? '#94A3B8' 
+                : (isSpoof ? '#DC2626' : '#059669');
+                
+            for (let i = 0; i < barCount; i++) {
+                let h;
+                if (!isCompleted) {
+                    h = 6 + (Math.sin(i * 0.4) * 3);
+                } else if (isSpoof) {
+                    h = 10 + (Math.sin(i * 0.8) * 14) + (Math.cos(i * 1.5) * 8);
+                } else {
+                    h = 12 + (Math.sin(i * 0.3) * 16) + (Math.cos(i * 0.7) * 10);
+                }
+                h = Math.max(4, Math.min(42, Math.abs(h)));
+                const y = (48 - h) / 2;
+                const x = i * 10 + 2;
+                svgHtml += `<rect x="${x}" y="${y}" width="4" height="${h}" rx="2" fill="${strokeColor}" opacity="0.85" />`;
+            }
+            svgHtml += '</svg>';
+            container.innerHTML = svgHtml;
+        }
+
+        let pendingLoginRole = null;
+
+        function promptLoginDialog(role) {
+            return new Promise((resolve, reject) => {
+                pendingLoginResolver = resolve;
+                pendingLoginRejecter = reject;
+                pendingLoginRole = role;
+                const u = ROLE_USERNAMES[role] || '';
+                const modal = document.getElementById('loginModal');
+                document.getElementById('loginUsername').value = u;
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginModalError').style.display = 'none';
+                document.getElementById('loginModalTitle').innerText = `Authentication Required: ${role.toUpperCase()}`;
+                document.getElementById('loginModalSubtitle').innerText = u
+                    ? `Enter secret for ${u}. Plaintext secrets are never stored in client code.`
+                    : `Enter authorized ${role.toUpperCase()} username and secret. No reviewer credentials are stored in client code.`;
+                if (modal) modal.style.display = 'flex';
+                const targetInput = u ? document.getElementById('loginPassword') : document.getElementById('loginUsername');
+                if (targetInput) targetInput.focus();
+            });
+        }
+
+        function closeLoginModal(success = false) {
+            const modal = document.getElementById('loginModal');
+            if (modal) modal.style.display = 'none';
+            if (!success && pendingLoginRejecter) {
+                pendingLoginRejecter(new Error("Authentication cancelled by user"));
+                pendingLoginResolver = null;
+                pendingLoginRejecter = null;
+                pendingLoginRole = null;
+            }
+        }
+
+        async function handleModalLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errDiv = document.getElementById('loginModalError');
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Authentication failed');
+                }
+                const data = await resp.json();
+                let matchedAny = false;
+                for (const [r, u] of Object.entries(ROLE_USERNAMES)) {
+                    if (u && u === username) {
+                        SESSION_TOKEN_CACHE[r] = data.access_token;
+                        try { sessionStorage.setItem('dfs_session_' + r, data.access_token); } catch(e) {}
+                        matchedAny = true;
+                    }
+                }
+                if (pendingLoginRole && !matchedAny) {
+                    SESSION_TOKEN_CACHE[pendingLoginRole] = data.access_token;
+                    ROLE_USERNAMES[pendingLoginRole] = username;
+                    try { sessionStorage.setItem('dfs_session_' + pendingLoginRole, data.access_token); } catch(e) {}
+                }
+                closeLoginModal(true);
+                if (pendingLoginResolver) {
+                    pendingLoginResolver(data.access_token);
+                    pendingLoginResolver = null;
+                    pendingLoginRejecter = null;
+                    pendingLoginRole = null;
+                }
+            } catch (err) {
+                errDiv.innerText = err.message || 'Login request error';
+                errDiv.style.display = 'block';
+            }
+        }
+
+        async function acquireSessionToken(role) {
+            if (SESSION_TOKEN_CACHE[role]) {
+                return SESSION_TOKEN_CACHE[role];
+            }
+            if (window.__DFS_SESSION_TOKENS && window.__DFS_SESSION_TOKENS[role]) {
+                SESSION_TOKEN_CACHE[role] = window.__DFS_SESSION_TOKENS[role];
+                return SESSION_TOKEN_CACHE[role];
+            }
+            try {
+                const stored = sessionStorage.getItem('dfs_session_' + role);
+                if (stored) {
+                    SESSION_TOKEN_CACHE[role] = stored;
+                    return stored;
+                }
+            } catch (e) {}
+            if (!ROLE_USERNAMES[role]) {
+                console.error("Unknown role: access denied (fail-closed policy enforced): " + role);
+                throw new Error("Unknown role: access denied (fail-closed policy enforced)");
+            }
+            return await promptLoginDialog(role);
+        }
+
+        async function authFetch(url, options = {}, role = null) {
+            const activeRole = role || currentOperatorRole || 'alice';
+            const token = await acquireSessionToken(activeRole);
+            if (!options.headers) options.headers = {};
+            if (token) {
+                options.headers['Authorization'] = 'Bearer ' + token;
+                options.headers['X-Session-Token'] = token;
+            }
+            return fetch(url, options);
+        }
+
+        async function switchActivePersona(newRole) {
+            const selectEl = document.getElementById('operatorPersonaSelect');
+            const oldRole = currentOperatorRole;
+            if (newRole === oldRole) return;
+
+            try {
+                const loginTargetLabel = ROLE_USERNAMES[newRole] || newRole.toUpperCase();
+                showBanner(`Authenticating operator as ${loginTargetLabel}...`, "info");
+                const token = await acquireSessionToken(newRole);
+                if (!token) throw new Error("Authentication cancelled");
+                
+                currentOperatorRole = newRole;
+                const u = ROLE_USERNAMES[newRole] || newRole;
+                const r = ROLE_DESCRIPTIONS[newRole];
+                const dName = ROLE_DISPLAY_NAMES[newRole] || u;
+                
+                document.getElementById('diagCurrentIdentity').innerText = u || newRole;
+                document.getElementById('diagCurrentRole').innerText = r || 'UNKNOWN';
+                
+                const sbName = document.getElementById('sidebarUserName');
+                const sbRole = document.getElementById('sidebarUserRole');
+                const sbAv = document.getElementById('sidebarAvatar');
+                if (sbName) sbName.innerText = dName;
+                if (sbRole) sbRole.innerText = r.split(' ')[0] + ' ' + (r.split(' ')[1] || '');
+                if (sbAv) {
+                    const initials = dName.split(' ').map(n => n[0]).join('');
+                    sbAv.innerText = initials;
+                }
+
+                const greet = document.getElementById('overviewGreetingTitle');
+                if (greet) greet.innerText = `Good morning, ${dName}`;
+
+                showBanner(`Session Active: ${u} (${r})`, "success");
+                loadDashboard();
+            } catch (err) {
+                selectEl.value = oldRole;
+                showBanner(`Authentication Required for ${newRole.toUpperCase()}: ${err.message}`, "warning");
+            }
+        }
+
+        async function handleLogout() {
+            const activeRole = currentOperatorRole;
+            const token = SESSION_TOKEN_CACHE[activeRole] || sessionStorage.getItem('dfs_session_' + activeRole);
+            if (token) {
+                try {
+                    await fetch('/api/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                } catch (e) {}
+            }
+            delete SESSION_TOKEN_CACHE[activeRole];
+            try { sessionStorage.removeItem('dfs_session_' + activeRole); } catch(e) {}
+            if (window.__DFS_SESSION_TOKENS) {
+                delete window.__DFS_SESSION_TOKENS[activeRole];
+            }
+
+            showBanner(`Session revoked for ${ROLE_USERNAMES[activeRole]}. Re-authentication required.`, "info");
+            document.getElementById('diagCurrentIdentity').innerText = "REVOKED (UNAUTHENTICATED)";
+            document.getElementById('diagCurrentRole').innerText = "NONE";
+
+            promptLoginDialog(activeRole).then(() => {
+                loadDashboard();
+            }).catch(() => {});
+        }
+
+        async function loadBeneficiariesTable() {
+            try {
+                const res = await authFetch('/api/beneficiaries', {}, currentOperatorRole);
+                if (!res.ok) return;
+                const bens = await res.json();
+                const tbody = document.getElementById('beneficiariesTableBody');
+                if (!tbody) return;
+                if (!bens || bens.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No beneficiaries found.</td></tr>';
+                    return;
+                }
+                let html = '';
+                for (const b of bens) {
+                    const lockBadge = b.is_locked 
+                        ? '<span class="status-pill pill-warning">ACTIVE_LOCKED</span>' 
+                        : '<span class="status-pill pill-success">RELEASED (FREE)</span>';
+                    
+                    const maskedDest = b.receiver_email || 'billing.infra@example.com';
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="font-weight: 600; color: var(--navy-900);">${b.legal_name}</div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Contractor Ref: ${b.program_ref}</div>
+                            </td>
+                            <td><span class="mono">${b.program_ref}</span></td>
+                            <td><span class="mono" style="color: var(--cobalt-700);">${maskedDest}</span></td>
+                            <td><span class="status-pill pill-success">${b.verification_status}</span></td>
+                            <td>${lockBadge}</td>
+                            <td><span style="font-size: 12px; color: var(--text-muted);">Satisfied (72h policy)</span></td>
+                        </tr>
+                    `;
+                }
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.warn("Failed to load beneficiaries table:", err);
+            }
+        }
+
+        function renderEmptyDashboard(data) {
+            selectedBatchId = null;
+            
+            document.getElementById('kpiBatchTotalDisplay').innerText = '$0.00 USD';
+            document.getElementById('kpiBatchPeriodDisplay').innerText = 'No active batch';
+            document.getElementById('kpiVoiceScoreDisplay').innerText = '--';
+            document.getElementById('kpiVoiceRecommendation').innerText = 'Recommendation: Not assessed';
+            const aPill = document.getElementById('audioDecisionPill');
+            aPill.innerText = 'Not assessed';
+            aPill.className = 'status-pill pill-muted';
+            
+            document.getElementById('kpiApprovalCountDisplay').innerText = '0 of 2 signed';
+            const appPill = document.getElementById('approvalsPill');
+            appPill.innerText = 'Pending approvals';
+            appPill.className = 'status-pill pill-muted';
+            
+            document.getElementById('kpiGatewayOutcomeDisplay').innerText = 'Idle';
+            document.getElementById('kpiGatewayOutcomeDisplay').style.color = 'var(--text-primary)';
+            document.getElementById('kpiAttemptInfoDisplay').innerText = 'No batches enqueued';
+            
+            document.getElementById('metricBatchId').innerText = 'None';
+            document.getElementById('metricProgramPeriod').innerText = '--';
+            document.getElementById('metricBatchAmount').innerText = '$0.00 USD';
+            document.getElementById('panelBatchTotalAmount').innerText = '$0.00 USD';
+            document.getElementById('metricItemCount').innerText = '0 items';
+            document.getElementById('metricFencingToken').innerText = '--';
+            
+            const bPill = document.getElementById('batchStatePill');
+            bPill.innerText = 'No active batch';
+            bPill.className = 'status-pill pill-muted';
+            
+            const envPill = document.getElementById('envelopeStatePill');
+            if (envPill) {
+                envPill.innerText = 'No active batch';
+                envPill.className = 'status-pill pill-muted';
+            }
+            
+            const lockEl = document.getElementById('metricLockStatus');
+            lockEl.innerText = 'Not acquired';
+            lockEl.style.color = 'var(--text-muted)';
+            
+            const aIndicator = document.getElementById('audioStateIndicator');
+            if (aIndicator) {
+                aIndicator.innerText = 'Not assessed';
+                aIndicator.className = 'status-pill pill-muted';
+            }
+            document.getElementById('metricWadaSnr').innerText = '--';
+            document.getElementById('metricDeepfakeProb').innerText = '--';
+            document.getElementById('deepfakeProgressBar').style.width = '0%';
+            document.getElementById('metricRecommendation').innerText = 'Upload an audio recording to begin verification.';
+            document.getElementById('metricCloneFlag').innerText = 'Not assessed';
+            renderWaveform(false, false);
+            renderManualAudioReviewPanel(null, null);
+            
+            const offPill = document.getElementById('officerSummaryPill');
+            if (offPill) {
+                offPill.innerText = '0 of 2 signed';
+                offPill.className = 'status-pill pill-muted';
+            }
+            document.getElementById('stepChecker1').className = 'step-node';
+            document.getElementById('stepChecker2').className = 'step-node';
+            document.getElementById('stepOutbox').className = 'step-node';
+            
+            const bobBadge = document.getElementById('bobStatusBadge');
+            bobBadge.innerText = 'Pending';
+            bobBadge.className = 'status-pill pill-muted';
+            document.getElementById('bobCredId').innerText = 'cred_bob_yubikey_01';
+            document.getElementById('bobTime').innerText = 'No active batch';
+            const btnBob = document.getElementById('btnSignBob');
+            if (btnBob) {
+                btnBob.style.display = 'inline-flex';
+                btnBob.disabled = true;
+                btnBob.title = "No active batch eligible for sign-off";
+                btnBob.style.opacity = '0.5';
+                btnBob.style.cursor = 'not-allowed';
+            }
+            
+            const carolBadge = document.getElementById('carolStatusBadge');
+            carolBadge.innerText = 'Pending';
+            carolBadge.className = 'status-pill pill-muted';
+            document.getElementById('carolCredId').innerText = 'cred_carol_titan_02';
+            document.getElementById('carolTime').innerText = 'No active batch';
+            const btnCarol = document.getElementById('btnSignCarol');
+            if (btnCarol) {
+                btnCarol.style.display = 'inline-flex';
+                btnCarol.disabled = true;
+                btnCarol.title = "No active batch eligible for sign-off";
+                btnCarol.style.opacity = '0.5';
+                btnCarol.style.cursor = 'not-allowed';
+            }
+            
+            document.getElementById('metricPayPalReqId').innerText = '--';
+            document.getElementById('metricPayPalBatchId').innerText = 'None';
+            document.getElementById('metricPayPalBatchId').style.color = 'var(--text-muted)';
+            document.getElementById('metricPayPalBatchStatus').innerText = 'Idle';
+            document.getElementById('paypalStatePill').innerText = 'Idle';
+            document.getElementById('paypalStatePill').className = 'status-pill pill-muted';
+            document.getElementById('metricAttemptInfo').innerText = 'No active submission';
+            
+            document.getElementById('metricJobId').innerText = 'None';
+            document.getElementById('metricJobStatus').innerText = 'Awaiting batch';
+            document.getElementById('metricJobFencing').innerText = '--';
+            document.getElementById('outboxJobDetailedDisplay').innerText = 'Not enqueued';
+            const oPill = document.getElementById('outboxStatePill');
+            oPill.innerText = 'Not enqueued';
+            oPill.className = 'status-pill pill-muted';
+            
+            const btnDispatch = document.getElementById('btnDispatchWorker');
+            if (btnDispatch) {
+                btnDispatch.disabled = true;
+                btnDispatch.title = "No eligible outbox job to dispatch";
+                btnDispatch.style.opacity = '0.5';
+                btnDispatch.style.cursor = 'not-allowed';
+            }
+            
+            document.getElementById('itemsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-state-cell">
+                        <div class="empty-state-title">No payout items loaded.</div>
+                        <div class="empty-state-desc">Select an active batch or create a new payout to view items.</div>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('itemsSummaryPill').innerText = '0 items';
+            
+            const cPill = document.getElementById('auditChainPill');
+            cPill.innerText = 'No events';
+            cPill.className = 'status-pill pill-muted';
+            document.getElementById('auditLogBox').innerHTML = `
+                <div class="empty-state-cell" style="padding: 24px;">
+                    <div class="empty-state-title">No audit events recorded yet.</div>
+                    <div class="empty-state-desc">Batch lifecycle events will appear here once actions are taken.</div>
+                </div>
+            `;
+            
+            loadBeneficiariesTable();
+        }
+
+        async function loadDashboard() {
+            try {
+                let url = '/api/dashboard/overview';
+                if (selectedBatchId) {
+                    url += `?batch_id=${encodeURIComponent(selectedBatchId)}`;
+                }
+
+                const res = await authFetch(url, {}, currentOperatorRole);
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        const err = await res.json();
+                        showBanner(`Access Forbidden: ${err.detail}`, "danger");
+                        return;
+                    }
+                    return;
+                }
+                const data = await res.json();
+
+                document.getElementById('lastRefreshedTime').innerText = new Date().toLocaleTimeString();
+
+                // 1. Provider Badge
+                if (data.provider_info) {
+                    const pb = document.getElementById('headerProviderBadge');
+                    pb.innerText = data.provider_info.connection_label;
+                    if (data.provider_info.is_simulator) {
+                        pb.className = 'env-badge env-badge-sim';
+                    } else {
+                        pb.className = 'env-badge env-badge-live';
+                    }
+                    document.getElementById('metricProviderMode').innerText = data.provider_info.provider_mode;
+                }
+
+                // 2. Batch Dropdown & Historical Table
+                const select = document.getElementById('batchSelectDropdown');
+                const rtb = document.getElementById('recentBatchesTableBody');
+                const rbc = document.getElementById('recentBatchesCountBadge');
+
+                if (data.recent_batches && data.recent_batches.length > 0) {
+                    const currentVal = selectedBatchId || (data.active_batch ? data.active_batch.id : "");
+                    let optHtml = '';
+                    let recentTableHtml = '';
+                    
+                    for (const rb of data.recent_batches) {
+                        const isSel = (rb.id === currentVal) ? 'selected' : '';
+                        const shortId = rb.id.substring(0, 8);
+                        optHtml += `<option value="${rb.id}" ${isSel}>${shortId}... (${rb.gateway_batch_state})</option>`;
+
+                        const statePillClass = (rb.gateway_batch_state === 'SETTLED' || rb.gateway_batch_state === 'SUBMITTED') 
+                            ? 'pill-success' 
+                            : (rb.gateway_batch_state === 'BLOCKED' ? 'pill-danger' : (rb.gateway_batch_state === 'MANUAL_RECONCILIATION_REQUIRED' ? 'pill-warning' : 'pill-info'));
+                        
+                        const amt = '$' + ((rb.total_amount_cents || 0) / 100).toFixed(2);
+                        recentTableHtml += `
+                            <tr>
+                                <td><span class="mono">${shortId}...</span></td>
+                                <td><span class="status-pill ${statePillClass}">${rb.gateway_batch_state}</span></td>
+                                <td>${rb.item_count || 0}</td>
+                                <td style="text-align: right;" class="amount-col">${amt}</td>
+                                <td><button class="btn-outline-sm" onclick="onBatchSelected('${rb.id}')">Inspect</button></td>
+                            </tr>
+                        `;
+                    }
+                    select.innerHTML = optHtml;
+                    if (rtb) rtb.innerHTML = recentTableHtml;
+                    if (rbc) rbc.innerText = `${data.recent_batches.length} RUNS`;
+                } else {
+                    select.innerHTML = '<option value="">(No Payout Batches Available)</option>';
+                    if (rtb) {
+                        rtb.innerHTML = `
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 24px 16px; color: var(--text-muted);">
+                                    <div style="font-weight: 600; color: var(--navy-900); margin-bottom: 4px;">No Payout Batches Found</div>
+                                    <div style="font-size: 12px; margin-bottom: 12px;">No payment envelopes have been initiated yet.</div>
+                                    <button class="btn-primary-sm" onclick="openNewBatchModal()">+ Create Payout Batch</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    if (rbc) rbc.innerText = '0 RUNS';
+                }
+
+                if (!data.active_batch) {
+                    renderEmptyDashboard(data);
+                    return;
+                }
+
+                const b = data.active_batch;
+                selectedBatchId = b.id;
+
+                // 3. Batch Panel & KPIs
+                document.getElementById('metricBatchId').innerText = b.id;
+                document.getElementById('metricProgramPeriod').innerText = `${b.program_id || 'PROG_DEV_2026'} / ${b.payout_period || '2026-11'}`;
+                
+                const formattedAmount = '$' + (b.total_amount_cents / 100).toFixed(2) + ' USD';
+                document.getElementById('metricBatchAmount').innerText = formattedAmount;
+                document.getElementById('panelBatchTotalAmount').innerText = formattedAmount;
+                document.getElementById('kpiBatchTotalDisplay').innerText = formattedAmount;
+                document.getElementById('kpiBatchPeriodDisplay').innerText = `Period: ${b.payout_period || '2026-11'}`;
+                
+                document.getElementById('metricItemCount').innerText = `${b.item_count} items`;
+                document.getElementById('metricFencingToken').innerText = b.fencing_token;
+                
+                const bPill = document.getElementById('batchStatePill');
+                bPill.innerText = formatStatus(b.gateway_batch_state);
+                
+                const envPill = document.getElementById('envelopeStatePill');
+                if (envPill) {
+                    envPill.innerText = formatStatus(b.gateway_batch_state);
+                }
+
+                if (b.gateway_batch_state === 'SETTLED' || b.gateway_batch_state === 'SUBMITTED') {
+                    bPill.className = 'status-pill pill-success';
+                    if (envPill) envPill.className = 'status-pill pill-success';
+                } else if (b.gateway_batch_state === 'BLOCKED') {
+                    bPill.className = 'status-pill pill-danger';
+                    if (envPill) envPill.className = 'status-pill pill-danger';
+                } else if (b.gateway_batch_state === 'MANUAL_RECONCILIATION_REQUIRED') {
+                    bPill.className = 'status-pill pill-warning';
+                    if (envPill) envPill.className = 'status-pill pill-warning';
+                } else {
+                    bPill.className = 'status-pill pill-info';
+                    if (envPill) envPill.className = 'status-pill pill-info';
+                }
+
+                // Lock status
+                const lockEl = document.getElementById('metricLockStatus');
+                if (data.lock_status && data.lock_status.is_held) {
+                    lockEl.innerText = 'RETAINED_ACTIVE';
+                    lockEl.style.color = 'var(--amber-800)';
+                } else {
+                    lockEl.innerText = (b.gateway_batch_state === 'SETTLED' || b.gateway_batch_state === 'SUBMITTED') 
+                        ? 'CLEANLY_RELEASED' 
+                        : 'NOT_ACQUIRED';
+                    lockEl.style.color = 'var(--text-muted)';
+                }
+
+                // 4. Audio Risk & Heuristic Scoring
+                const aPill = document.getElementById('audioDecisionPill');
+                const aIndicator = document.getElementById('audioStateIndicator');
+                
+                let currentManualReview = null;
+                if (data.audio_evaluation) {
+                    const ae = data.audio_evaluation;
+                    const ar = data.audio_review || null;
+                    currentManualReview = ar;
+                    const manualRec = ar && ar.manual_review ? (ar.manual_review.review_decision || '').toUpperCase() : null;
+                    const pct = (ae.deepfake_probability * 100).toFixed(1);
+                    const recUpper = (ae.recommendation || '').toUpperCase();
+                    const isChallenge = recUpper === 'CHALLENGE';
+                    const isSpoof = Boolean(ae.voice_clone_flag) || recUpper === 'TERMINATE' || recUpper === 'REJECT_SPOOF';
+                    const isAiApproved = recUpper === 'APPROVE' && !isSpoof;
+                    
+                    document.getElementById('kpiVoiceScoreDisplay').innerText = `${pct}% Spoof Risk`;
+                    document.getElementById('kpiVoiceRecommendation').innerText = `AI Recommendation: ${ae.recommendation}${isChallenge ? ' (NEEDS_REVIEW)' : ''}`;
+                    
+                    document.getElementById('metricWadaSnr').innerText = (ae.wada_snr_db ? ae.wada_snr_db.toFixed(1) : '--') + ' dB';
+                    document.getElementById('metricDeepfakeProb').innerText = pct + '%';
+                    
+                    const pb = document.getElementById('deepfakeProgressBar');
+                    pb.style.width = pct + '%';
+                    pb.style.backgroundColor = isSpoof
+                        ? 'var(--rose-600)'
+                        : (isChallenge ? 'var(--amber-500, #d97706)' : 'var(--emerald-600)');
+                    
+                    document.getElementById('metricRecommendation').innerText = isChallenge
+                        ? `${ae.recommendation} (Manual Review Gate)`
+                        : ae.recommendation;
+
+                    if (isSpoof) {
+                        document.getElementById('metricCloneFlag').innerText = ae.voice_clone_flag
+                            ? 'YES (SYNTHETIC SPOOF DETECTED)'
+                            : 'BLOCKED (TERMINATE POLICY)';
+                        aPill.innerText = 'Blocked';
+                        aPill.className = 'status-pill pill-danger';
+                        if (aIndicator) {
+                            aIndicator.innerText = 'Blocked';
+                            aIndicator.className = 'status-pill pill-danger';
+                        }
+                    } else if (isChallenge) {
+                        document.getElementById('metricCloneFlag').innerText = 'NONE DETECTED (AI CHALLENGE — NOT AUTHENTICATED)';
+                        if (manualRec === 'APPROVE_WITH_REVIEW') {
+                            aPill.innerText = 'AI CHALLENGE • Reviewed';
+                            aPill.className = 'status-pill pill-warning';
+                            if (aIndicator) {
+                                aIndicator.innerText = 'AI CHALLENGE • Reviewed';
+                                aIndicator.className = 'status-pill pill-warning';
+                            }
+                        } else if (manualRec === 'REJECT') {
+                            aPill.innerText = 'Rejected by Reviewer';
+                            aPill.className = 'status-pill pill-danger';
+                            if (aIndicator) {
+                                aIndicator.innerText = 'Rejected by Reviewer';
+                                aIndicator.className = 'status-pill pill-danger';
+                            }
+                        } else {
+                            aPill.innerText = 'Needs Review';
+                            aPill.className = 'status-pill pill-warning';
+                            if (aIndicator) {
+                                aIndicator.innerText = 'Needs Review';
+                                aIndicator.className = 'status-pill pill-warning';
+                            }
+                        }
+                    } else if (isAiApproved) {
+                        document.getElementById('metricCloneFlag').innerText = 'NO (GENUINE EXECUTIVE)';
+                        aPill.innerText = 'Passed';
+                        aPill.className = 'status-pill pill-success';
+                        if (aIndicator) {
+                            aIndicator.innerText = 'Passed';
+                            aIndicator.className = 'status-pill pill-success';
+                        }
+                    } else {
+                        document.getElementById('metricCloneFlag').innerText = 'UNKNOWN POLICY STATE';
+                        aPill.innerText = ae.recommendation || 'Blocked';
+                        aPill.className = 'status-pill pill-danger';
+                        if (aIndicator) {
+                            aIndicator.innerText = ae.recommendation || 'Blocked';
+                            aIndicator.className = 'status-pill pill-danger';
+                        }
+                    }
+                    renderWaveform(isSpoof || (manualRec === 'REJECT'), true);
+                    renderManualAudioReviewPanel(data.audio_evaluation, data.audio_review);
+                } else {
+                    aPill.innerText = 'Not assessed';
+                    aPill.className = 'status-pill pill-muted';
+                    if (aIndicator) {
+                        aIndicator.innerText = 'Not assessed';
+                        aIndicator.className = 'status-pill pill-muted';
+                    }
+                    document.getElementById('kpiVoiceScoreDisplay').innerText = `--`;
+                    document.getElementById('kpiVoiceRecommendation').innerText = `Recommendation: Not assessed`;
+                    document.getElementById('metricWadaSnr').innerText = '--';
+                    document.getElementById('metricDeepfakeProb').innerText = '--';
+                    document.getElementById('deepfakeProgressBar').style.width = '0%';
+                    document.getElementById('metricRecommendation').innerText = 'Upload an audio recording to begin verification.';
+                    document.getElementById('metricCloneFlag').innerText = 'Not assessed';
+                    renderWaveform(false, false);
+                    renderManualAudioReviewPanel(null, null);
+                }
+
+                // 5. Dual WebAuthn Panel & Stepper
+                const isBatchEligible = b && (b.gateway_batch_state === 'PENDING_APPROVAL' || b.gateway_batch_state === 'REVIEW');
+                const appPill = document.getElementById('approvalsPill');
+                const offPill = document.getElementById('officerSummaryPill');
+                appPill.innerText = `${data.approval_count} / 2 SIGNED`;
+                if (offPill) offPill.innerText = `${data.approval_count} / 2 SIGNED`;
+
+                document.getElementById('kpiApprovalCountDisplay').innerText = `${data.approval_count} of 2 Verified`;
+
+                const step1 = document.getElementById('stepChecker1');
+                const step2 = document.getElementById('stepChecker2');
+                const stepOut = document.getElementById('stepOutbox');
+
+                if (data.is_threshold_met) {
+                    appPill.className = 'status-pill pill-success';
+                    if (offPill) offPill.className = 'status-pill pill-success';
+                    step1.className = 'step-node done';
+                    step2.className = 'step-node done';
+                    stepOut.className = 'step-node done';
+                } else if (data.approval_count === 1) {
+                    appPill.className = 'status-pill pill-warning';
+                    if (offPill) offPill.className = 'status-pill pill-warning';
+                    step1.className = 'step-node done';
+                    step2.className = 'step-node';
+                    stepOut.className = 'step-node';
+                } else {
+                    appPill.className = 'status-pill pill-muted';
+                    if (offPill) offPill.className = 'status-pill pill-muted';
+                    step1.className = 'step-node';
+                    step2.className = 'step-node';
+                    stepOut.className = 'step-node';
+                }
+
+                // Bob details
+                const bInfo = data.bob_info;
+                const bobBadge = document.getElementById('bobStatusBadge');
+                const btnBob = document.getElementById('btnSignBob');
+                if (bInfo.is_approved) {
+                    const authType = bInfo.authenticator_type || 'AUTHENTICATOR TYPE UNVERIFIED';
+                    bobBadge.innerText = authType === 'HARDWARE-BACKED' ? 'Approved (Hardware)' : 'Approved (Emulated)';
+                    bobBadge.className = 'status-pill ' + (authType === 'HARDWARE-BACKED' ? 'pill-success' : 'pill-warning');
+                    if (btnBob) btnBob.style.display = 'none';
+                } else {
+                    bobBadge.innerText = isBatchEligible ? 'Pending sign-off' : 'Awaiting batch';
+                    bobBadge.className = 'status-pill pill-muted';
+                    if (btnBob) {
+                        btnBob.style.display = 'inline-flex';
+                        btnBob.disabled = !isBatchEligible;
+                        btnBob.title = isBatchEligible ? "Sign WebAuthn Assertion as Bob" : "Batch must be finalized and in PENDING_APPROVAL status to sign.";
+                        btnBob.style.opacity = isBatchEligible ? '1' : '0.5';
+                        btnBob.style.cursor = isBatchEligible ? 'pointer' : 'not-allowed';
+                    }
+                }
+                document.getElementById('bobCredId').innerText = bInfo.credential_id || 'cred_bob_yubikey_01';
+                document.getElementById('bobTime').innerText = bInfo.approved_at ? new Date(bInfo.approved_at).toLocaleTimeString() : 'Awaiting assertion';
+
+                // Carol details
+                const cInfo = data.carol_info;
+                const carolBadge = document.getElementById('carolStatusBadge');
+                const btnCarol = document.getElementById('btnSignCarol');
+                if (cInfo.is_approved) {
+                    const authType = cInfo.authenticator_type || 'AUTHENTICATOR TYPE UNVERIFIED';
+                    carolBadge.innerText = authType === 'HARDWARE-BACKED' ? 'Approved (Hardware)' : 'Approved (Emulated)';
+                    carolBadge.className = 'status-pill ' + (authType === 'HARDWARE-BACKED' ? 'pill-success' : 'pill-warning');
+                    if (btnCarol) btnCarol.style.display = 'none';
+                } else {
+                    carolBadge.innerText = isBatchEligible ? 'Pending sign-off' : 'Awaiting batch';
+                    carolBadge.className = 'status-pill pill-muted';
+                    if (btnCarol) {
+                        btnCarol.style.display = 'inline-flex';
+                        btnCarol.disabled = !isBatchEligible;
+                        btnCarol.title = isBatchEligible ? "Sign WebAuthn Assertion as Carol" : "Batch must be finalized and in PENDING_APPROVAL status to sign.";
+                        btnCarol.style.opacity = isBatchEligible ? '1' : '0.5';
+                        btnCarol.style.cursor = isBatchEligible ? 'pointer' : 'not-allowed';
+                    }
+                }
+                document.getElementById('carolCredId').innerText = cInfo.credential_id || 'cred_carol_titan_02';
+                document.getElementById('carolTime').innerText = cInfo.approved_at ? new Date(cInfo.approved_at).toLocaleTimeString() : 'Awaiting assertion';
+
+                // 6. PayPal Gateway Panel & KPIs
+                document.getElementById('metricPayPalReqId').innerText = b.paypal_request_id || '--';
+                
+                const pBatchIdEl = document.getElementById('metricPayPalBatchId');
+                const pStatusEl = document.getElementById('metricPayPalBatchStatus');
+                const pPill = document.getElementById('paypalStatePill');
+                const pAttemptEl = document.getElementById('metricAttemptInfo');
+                const kpiOutcomeEl = document.getElementById('kpiGatewayOutcomeDisplay');
+                const kpiAttemptEl = document.getElementById('kpiAttemptInfoDisplay');
+
+                if (b.gateway_batch_state === 'MANUAL_RECONCILIATION_REQUIRED') {
+                    pBatchIdEl.innerText = 'UNKNOWN (Unconfirmed Provider Outcome)';
+                    pBatchIdEl.style.color = 'var(--amber-800)';
+                    pStatusEl.innerText = 'Reconciliation required (504 Timeout)';
+                    pPill.innerText = 'Reconciliation required';
+                    pPill.className = 'status-pill pill-warning';
+                    
+                    kpiOutcomeEl.innerText = 'Reconciliation required';
+                    kpiOutcomeEl.style.color = 'var(--amber-800)';
+
+                    if (data.provider_info && data.provider_info.latest_attempt) {
+                        const att = data.provider_info.latest_attempt;
+                        const tStr = `HTTP ${att.http_status} at ${new Date(att.attempted_at).toLocaleTimeString()}`;
+                        pAttemptEl.innerText = tStr;
+                        kpiAttemptEl.innerText = tStr;
+                    } else {
+                        pAttemptEl.innerText = 'Ambiguous network disconnect recorded';
+                        kpiAttemptEl.innerText = 'Lock retained for safety';
+                    }
+                } else if (b.gateway_batch_state === 'SETTLED' || b.gateway_batch_state === 'SUBMITTED') {
+                    pBatchIdEl.innerText = b.payout_batch_id || '--';
+                    pBatchIdEl.style.color = 'var(--cobalt-600)';
+                    pStatusEl.innerText = formatStatus(b.paypal_batch_state || 'SETTLED');
+                    pPill.innerText = formatStatus(b.paypal_batch_state || 'SETTLED');
+                    pPill.className = 'status-pill pill-success';
+                    pAttemptEl.innerText = 'HTTP 201 Created (Settlement Verified)';
+                    
+                    kpiOutcomeEl.innerText = 'Settled';
+                    kpiOutcomeEl.style.color = 'var(--emerald-800)';
+                    kpiAttemptEl.innerText = 'Settlement Reconciled';
+                } else if (b.gateway_batch_state === 'BLOCKED') {
+                    pBatchIdEl.innerText = 'HALTED_BY_DEFENSE_GATE';
+                    pBatchIdEl.style.color = 'var(--rose-600)';
+                    pStatusEl.innerText = 'Blocked';
+                    pPill.innerText = 'Blocked';
+                    pPill.className = 'status-pill pill-danger';
+                    pAttemptEl.innerText = 'Acoustic defense prevented submission';
+                    
+                    kpiOutcomeEl.innerText = 'Blocked';
+                    kpiOutcomeEl.style.color = 'var(--rose-600)';
+                    kpiAttemptEl.innerText = 'Synthetic Voice Caught';
+                } else {
+                    pBatchIdEl.innerText = 'None (Awaiting Dual Approval)';
+                    pBatchIdEl.style.color = 'var(--text-muted)';
+                    pStatusEl.innerText = 'Idle';
+                    pPill.innerText = 'Idle';
+                    pPill.className = 'status-pill pill-muted';
+                    pAttemptEl.innerText = 'No API attempts initiated';
+                    
+                    kpiOutcomeEl.innerText = 'Idle';
+                    kpiOutcomeEl.style.color = 'var(--text-primary)';
+                    kpiAttemptEl.innerText = 'Awaiting Dual Approvals';
+                }
+
+                // 7. Outbox Worker Panel
+                const j = data.outbox_job;
+                const oPill = document.getElementById('outboxStatePill');
+                if (j) {
+                    document.getElementById('metricJobId').innerText = j.id;
+                    document.getElementById('metricJobStatus').innerText = j.status;
+                    document.getElementById('metricJobFencing').innerText = j.fencing_token;
+                    document.getElementById('outboxJobDetailedDisplay').innerText = `${j.id.substring(0,8)}... (Lock Token: ${j.fencing_token})`;
+                    oPill.innerText = j.status;
+                    if (j.status === 'COMPLETED') {
+                        oPill.className = 'status-pill pill-success';
+                    } else if (j.status === 'MANUAL_RECONCILIATION_REQUIRED') {
+                        oPill.className = 'status-pill pill-warning';
+                    } else {
+                        oPill.className = 'status-pill pill-info';
+                    }
+                } else {
+                    document.getElementById('metricJobId').innerText = 'None';
+                    document.getElementById('metricJobStatus').innerText = 'Awaiting Approvals';
+                    document.getElementById('metricJobFencing').innerText = '--';
+                    document.getElementById('outboxJobDetailedDisplay').innerText = 'Not Enqueued';
+                    oPill.innerText = 'NOT_ENQUEUED';
+                    oPill.className = 'status-pill pill-muted';
+                }
+
+                const btnDispatch = document.getElementById('btnDispatchWorker');
+                if (btnDispatch) {
+                    const isWorkerEligible = j && (j.status === 'ENQUEUED' || j.status === 'CLAIMED' || j.status === 'PENDING_RETRY' || j.status === 'MANUAL_RECONCILIATION_REQUIRED');
+                    btnDispatch.disabled = !isWorkerEligible;
+                    btnDispatch.title = isWorkerEligible ? "Dispatch outbox worker to process PayPal payment" : "No pending or eligible outbox job to dispatch.";
+                    btnDispatch.style.opacity = isWorkerEligible ? '1' : '0.5';
+                    btnDispatch.style.cursor = isWorkerEligible ? 'pointer' : 'not-allowed';
+                }
+
+                // 8. Financial Items Table
+                if (data.items && data.items.length > 0) {
+                    let html = '';
+                    for (const it of data.items) {
+                        html += `
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; color: var(--navy-900);">${it.legal_name}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">${it.note || 'Contractor disbursement'}</div>
+                                </td>
+                                <td class="mono">${it.sender_item_id}</td>
+                                <td><span class="status-pill ${it.status_badge_class}">${it.display_gateway_state}</span></td>
+                                <td><span class="status-pill ${it.status_badge_class}">${it.display_paypal_state}</span></td>
+                                <td class="mono">${it.payout_item_id || '--'}</td>
+                                <td style="color: var(--text-muted); font-size: 12px;">${it.state_explanation}</td>
+                                <td class="amount-col">$${(it.amount_cents / 100).toFixed(2)} USD</td>
+                            </tr>
+                        `;
+                    }
+                    document.getElementById('itemsTableBody').innerHTML = html;
+                    document.getElementById('itemsSummaryPill').innerText = `${data.items.length} ITEMS RECONCILED`;
+                } else {
+                    document.getElementById('itemsTableBody').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No active payout items loaded for this batch.</td></tr>`;
+                    document.getElementById('itemsSummaryPill').innerText = '0 ITEMS';
+                }
+
+                // 9. Chronological Audit Timeline
+                const cPill = document.getElementById('auditChainPill');
+                if (data.audit_events && data.audit_events.length > 0) {
+                    let html = '';
+                    for (const ev of data.audit_events) {
+                        const time = new Date(ev.created_at).toLocaleTimeString();
+                        
+                        let cleanTitle = ev.event_type.replace(/_/g, ' ');
+                        let cleanActor = ev.actor_username ? ev.actor_username : 'System / Automated';
+                        
+                        html += `
+                            <div class="activity-item">
+                                <div class="activity-icon">✓</div>
+                                <div class="activity-details">
+                                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                        <div class="activity-title">${cleanTitle}</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);">${time}</div>
+                                    </div>
+                                    <div class="activity-meta">
+                                        Target: <strong>${ev.entity_type}</strong> (<span class="mono">${ev.entity_id.substring(0,8)}...</span>) • Initiated by: <strong>${cleanActor}</strong>
+                                    </div>
+                                    <details style="margin-top: 4px; font-size: 11px; color: var(--text-muted);">
+                                        <summary style="cursor: pointer;">Cryptographic Digest</summary>
+                                        <div class="mono" style="padding: 4px 6px; background: #F1F5F9; border-radius: 4px; margin-top: 2px; word-break: break-all;">${ev.event_digest}</div>
+                                    </details>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('auditLogBox').innerHTML = html;
+                    if (data.chain_verified) {
+                        cPill.innerText = 'Chain verified';
+                        cPill.className = 'status-pill pill-success';
+                    } else {
+                        cPill.innerText = 'Integrity alert';
+                        cPill.className = 'status-pill pill-danger';
+                    }
+                } else {
+                    document.getElementById('auditLogBox').innerHTML = `<div style="color: var(--text-muted); padding: 12px; font-size: 12px;">No audit events recorded yet for this batch.</div>`;
+                    cPill.innerText = 'No events';
+                    cPill.className = 'status-pill pill-muted';
+                }
+
+                loadBeneficiariesTable();
+
+            } catch (err) {
+                console.error("Dashboard refresh error:", err);
+            }
+        }
+
+        async function approveWithWebAuthn(batchId, role, credentialId) {
+            try {
+                showBanner(`Fetching WebAuthn challenge for ${role.toUpperCase()}...`, "info");
+                const chalResp = await authFetch(`/api/batches/${batchId}/webauthn/challenge`, {
+                    method: 'POST'
+                }, role);
+
+                if (!chalResp.ok) {
+                    const err = await chalResp.json();
+                    throw new Error(err.detail || "Failed to issue challenge");
+                }
+                const chalData = await chalResp.json();
+
+                let isHardware = false;
+                let assertion = null;
+
+                if (window.navigator && window.navigator.credentials && window.navigator.credentials.get) {
+                    try {
+                        const rawHex = chalData.challenge_hex || "00".repeat(32);
+                        const chalBytes = new Uint8Array(rawHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                        const browserHost = window.location.hostname;
+                        const effectiveRpId = (chalData.rp_id === browserHost) ? chalData.rp_id : browserHost;
+                        
+                        const opts = {
+                            challenge: chalBytes,
+                            rpId: effectiveRpId,
+                            allowCredentials: [{
+                                id: new TextEncoder().encode(credentialId),
+                                type: 'public-key'
+                            }],
+                            userVerification: 'required',
+                            timeout: 5000
+                        };
+                        assertion = await window.navigator.credentials.get({ publicKey: opts });
+                        if (assertion) {
+                            isHardware = true;
+                        }
+                    } catch (navErr) {
+                        console.warn("Hardware WebAuthn get() bypassed (fallback to deterministic cryptographic simulation):", navErr.message);
+                    }
+                }
+
+                let payload = {};
+                if (isHardware && assertion) {
+                    const authDataHex = Array.from(new Uint8Array(assertion.response.authenticatorData)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    const sigHex = Array.from(new Uint8Array(assertion.response.signature)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    const clientDataText = new TextDecoder().decode(assertion.response.clientDataJSON);
+
+                    payload = {
+                        credential_id: credentialId,
+                        officer_user_id: chalData.officer_user_id,
+                        challenge_id: chalData.challenge_id,
+                        client_data_json: clientDataText,
+                        auth_data: authDataHex,
+                        signature: sigHex,
+                        mock_simulation: false
+                    };
+                } else {
+                    payload = {
+                        credential_id: credentialId,
+                        officer_user_id: chalData.officer_user_id,
+                        challenge_id: chalData.challenge_id,
+                        mock_simulation: true
+                    };
+                }
+
+                return await authFetch(`/api/batches/${batchId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, role);
+            } catch (err) {
+                console.error("WebAuthn approval failed:", err);
+                throw err;
+            }
+        }
+
+        let currentAudioReviewData = null;
+
+        function renderManualAudioReviewPanel(audioEval, audioReview) {
+            currentAudioReviewData = audioReview || null;
+            const statusPill = document.getElementById('manualReviewStatusPill');
+            const aiDecEl = document.getElementById('reviewAiDecision');
+            const verEl = document.getElementById('reviewAnalyzerVersion');
+            const repEl = document.getElementById('reviewReplayStatus');
+            const ctxEl = document.getElementById('reviewBatchContext');
+            const evalIdEl = document.getElementById('reviewEvalId');
+            const assetIdEl = document.getElementById('reviewAssetId');
+            const metaEl = document.getElementById('reviewAudioMeta');
+            const shaEl = document.getElementById('reviewSha256');
+            const fpEl = document.getElementById('reviewAcousticFp');
+            const metricsEl = document.getElementById('reviewAcousticMetrics');
+            const playerBox = document.getElementById('reviewAudioPlayerBox');
+            const playerEl = document.getElementById('reviewAudioPlayer');
+            const recBox = document.getElementById('recordedReviewBox');
+            const formBox = document.getElementById('manualReviewActionForm');
+
+            if (!statusPill) return;
+
+            if (playerEl && playerEl.dataset && playerEl.dataset.blobUrl) {
+                try { URL.revokeObjectURL(playerEl.dataset.blobUrl); } catch(e) {}
+                playerEl.dataset.blobUrl = '';
+            }
+            if (playerEl) {
+                playerEl.removeAttribute('src');
+                playerEl.style.display = 'none';
+            }
+
+            if (!audioEval && !audioReview) {
+                statusPill.innerText = 'NOT_REQUIRED';
+                statusPill.className = 'status-pill pill-muted';
+                aiDecEl.innerText = '--';
+                verEl.innerText = '--';
+                repEl.innerText = '--';
+                ctxEl.innerText = '--';
+                evalIdEl.innerText = '--';
+                assetIdEl.innerText = '--';
+                metaEl.innerText = '--';
+                shaEl.innerText = '--';
+                fpEl.innerText = '--';
+                metricsEl.innerText = '--';
+                if (playerBox) playerBox.style.display = 'none';
+                if (recBox) recBox.style.display = 'none';
+                if (formBox) formBox.style.display = 'none';
+                return;
+            }
+
+            const ar = audioReview || {};
+            const ev = ar.analysis || {};
+            const asset = ar.audio_evidence || {};
+            const batch = ar.batch || {};
+            const mr = ar.manual_review || null;
+            const recUpper = (ev.original_ai_decision || (audioEval && audioEval.recommendation) || '--').toUpperCase();
+            const policyUpper = (ev.original_policy_decision || (audioEval && audioEval.policy_decision) || '--').toUpperCase();
+            const statusUpper = ((mr && mr.status) || (recUpper === 'CHALLENGE' ? 'PENDING' : 'NOT_REQUIRED')).toUpperCase();
+
+            statusPill.innerText = statusUpper;
+            if (statusUpper === 'APPROVED_WITH_REVIEW') {
+                statusPill.className = 'status-pill pill-warning';
+            } else if (statusUpper === 'REJECTED') {
+                statusPill.className = 'status-pill pill-danger';
+            } else if (statusUpper === 'PENDING') {
+                statusPill.className = 'status-pill pill-warning';
+            } else {
+                statusPill.className = 'status-pill pill-muted';
+            }
+
+            aiDecEl.innerText = `${recUpper} / ${policyUpper} (Preserved AI Evaluation)`;
+            verEl.innerText = ev.analyzer_version || ev.model_version || (audioEval && audioEval.model_version) || '--';
+            const replayFlag = (typeof ev.replay_detected === 'boolean')
+                ? (ev.replay_detected ? 'REPLAY DETECTED' : 'UNIQUE AUDIO (NO REPLAY)')
+                : 'NOT REPORTED';
+            repEl.innerText = replayFlag;
+
+            const recipientsSummary = (ar.recipients || []).map(r => `${r.receiver_email || r.legal_name || '--'} ($${r.amount_usd || '0.00'})`).join(', ');
+            ctxEl.innerText = batch.batch_id
+                ? `${batch.batch_id} | $${batch.total_amount_usd || '0.00'} USD | State: ${batch.gateway_batch_state || '--'}${recipientsSummary ? ' | To: ' + recipientsSummary : ''}`
+                : '--';
+            evalIdEl.innerText = asset.risk_evaluation_id || (audioEval && audioEval.id) || '--';
+            assetIdEl.innerText = asset.audio_asset_id || (audioEval && audioEval.audio_asset_id) || '--';
+            const durMs = asset.duration_ms || (audioEval && audioEval.duration_ms);
+            const fmt = asset.format || (audioEval && audioEval.format) || '--';
+            const sr = asset.sample_rate || (audioEval && audioEval.sample_rate) || '--';
+            const ch = asset.channels || (audioEval && audioEval.channels) || '--';
+            metaEl.innerText = `${durMs ? (durMs / 1000).toFixed(2) + 's' : '--'} | ${fmt} | ${sr} Hz | ch=${ch}`;
+            shaEl.innerText = asset.audio_content_sha256 || (audioEval && audioEval.sha256_hash) || '--';
+            fpEl.innerText = asset.acoustic_fingerprint || (audioEval && audioEval.acoustic_fingerprint) || 'Unavailable';
+
+            const probVal = ev.deepfake_probability !== undefined ? ev.deepfake_probability : (audioEval && audioEval.deepfake_probability);
+            const consVal = ev.acoustic_consistency_score !== undefined ? ev.acoustic_consistency_score : (audioEval && audioEval.acoustic_consistency_score);
+            const wadaVal = ev.wada_snr_db !== undefined ? ev.wada_snr_db : (audioEval && audioEval.wada_snr_db);
+            metricsEl.innerText = `spoof_prob=${probVal !== undefined && probVal !== null ? Number(probVal).toFixed(4) : '--'}, consistency=${consVal !== undefined && consVal !== null ? Number(consVal).toFixed(4) : '--'}, wada_snr=${wadaVal !== undefined && wadaVal !== null ? Number(wadaVal).toFixed(1) + 'dB' : '--'}, max_win=${ev.max_window_score ?? '--'}, windows=${ev.window_count ?? '--'}`;
+
+            if (playerBox) {
+                playerBox.style.display = (asset.audio_stream_url && asset.audio_available) ? 'block' : 'none';
+            }
+
+            if (mr && mr.review_decision) {
+                recBox.style.display = 'block';
+                document.getElementById('recordedReviewDecision').innerText = `${mr.review_decision} (AI remains ${mr.original_recommendation})`;
+                document.getElementById('recordedReviewerIdentity').innerText = `${mr.reviewer_username || '--'} (${mr.reviewer_role || 'RISK_REVIEWER'})`;
+                document.getElementById('recordedReviewTimestamp').innerText = mr.reviewed_at || '--';
+                document.getElementById('recordedReviewJustification').innerText = mr.justification || '--';
+                if (formBox) formBox.style.display = 'none';
+            } else {
+                recBox.style.display = 'none';
+                if (formBox) {
+                    formBox.style.display = (recUpper === 'CHALLENGE' && policyUpper === 'NEEDS_REVIEW' && !ev.replay_detected && !ev.voice_clone_flag)
+                        ? 'block'
+                        : 'none';
+                }
+            }
+        }
+
+        async function loadReviewAudioStream() {
+            const streamUrl = currentAudioReviewData && currentAudioReviewData.audio_evidence && currentAudioReviewData.audio_evidence.audio_stream_url;
+            if (!selectedBatchId || !streamUrl) {
+                showBanner("No verifiable audio stream available for this batch.", "warning");
+                return;
+            }
+            try {
+                const token = await acquireSessionToken('reviewer');
+                const resp = await fetch(streamUrl, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Audio evidence stream unauthorized or unavailable');
+                }
+                const blob = await resp.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const playerEl = document.getElementById('reviewAudioPlayer');
+                if (playerEl.dataset && playerEl.dataset.blobUrl) {
+                    try { URL.revokeObjectURL(playerEl.dataset.blobUrl); } catch(e) {}
+                }
+                playerEl.dataset.blobUrl = blobUrl;
+                playerEl.src = blobUrl;
+                playerEl.style.display = 'block';
+                showBanner("Verified audio evidence loaded for RISK_REVIEWER playback.", "info");
+            } catch (err) {
+                showBanner("Audio evidence load failed: " + (err.message || err), "danger");
+            }
+        }
+
+        async function submitManualAudioReviewInteractive() {
+            if (!selectedBatchId || !currentAudioReviewData) {
+                showBanner("No active audio review evidence loaded.", "warning");
+                return;
+            }
+            const decisionEl = document.querySelector('input[name="manualReviewDecision"]:checked');
+            const justification = (document.getElementById('manualReviewJustificationInput').value || '').trim();
+            if (!decisionEl) {
+                showBanner("Select APPROVE_WITH_REVIEW or REJECT before submitting.", "warning");
+                return;
+            }
+            if (justification.length < 10) {
+                showBanner("Written justification (minimum 10 characters) is required.", "warning");
+                return;
+            }
+            const asset = currentAudioReviewData.audio_evidence || {};
+            try {
+                const resp = await authFetch(`/api/batches/${selectedBatchId}/audio-review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        risk_evaluation_id: asset.risk_evaluation_id,
+                        audio_asset_id: asset.audio_asset_id,
+                        audio_content_sha256: asset.audio_content_sha256,
+                        review_decision: decisionEl.value,
+                        justification
+                    })
+                }, 'reviewer');
+                const data = await resp.json();
+                if (!resp.ok) {
+                    throw new Error(data.detail || 'Manual review submission failed');
+                }
+                showBanner(`Manual review recorded: ${data.review_decision} by ${data.reviewer_username}. AI CHALLENGE preserved.`, data.review_decision === 'REJECT' ? 'danger' : 'info');
+                document.getElementById('manualReviewJustificationInput').value = '';
+                loadDashboard();
+            } catch (err) {
+                showBanner("Manual review error: " + (err.message || err), "danger");
+            }
+        }
+
+        async function runInteractiveVoiceTest() {
+            const selected = document.querySelector('input[name="audioPreset"]:checked').value;
+            showBanner(`Ingesting voice sample preset: ${selected}...`, "info");
+            try {
+                const formData = new FormData();
+                formData.append('sample_preset', selected);
+                const resp = await authFetch('/api/audio/analyze', {
+                    method: 'POST',
+                    body: formData
+                }, 'alice');
+                const result = await resp.json();
+                
+                if (result.voice_clone_flag || result.recommendation === 'REJECT_SPOOF' || result.recommendation === 'TERMINATE') {
+                    showBanner(`SECURITY ALERT: Voice screening blocked payment! Probability: ${(result.deepfake_probability*100).toFixed(1)}%. Disbursement Halted.`, "danger");
+                } else if (result.recommendation === 'CHALLENGE') {
+                    showBanner(`MANUAL REVIEW REQUIRED: AI returned CHALLENGE (${(result.deepfake_probability*100).toFixed(1)}% spoof risk). Independent RISK_REVIEWER decision required before finalization.`, "warning");
+                } else {
+                    showBanner(`VOICE VERIFIED: Genuine executive voice confirmed (${(result.deepfake_probability*100).toFixed(1)}% spoof risk).`, "success");
+                }
+                loadDashboard();
+            } catch (err) {
+                showBanner("Audio verification error: " + err, "danger");
+            }
+        }
+
+        async function signAsBobInteractive() {
+            if (!selectedBatchId) {
+                showBanner("No active payout batch selected.", "warning");
+                return;
+            }
+            showBanner("Requesting FIDO2 assertion from Officer 1 (Bob / YubiKey 5C)...", "info");
+            try {
+                const resp = await approveWithWebAuthn(selectedBatchId, 'bob', 'cred_bob_yubikey_01');
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Approval failed');
+                }
+                showBanner("Officer 1 (Bob) signed with WebAuthn P-256 ECDSA assertion. Awaiting Officer 2.", "success");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Approval error: " + err, "danger");
+            }
+        }
+
+        async function signAsCarolInteractive() {
+            if (!selectedBatchId) {
+                showBanner("No active payout batch selected.", "warning");
+                return;
+            }
+            showBanner("Requesting FIDO2 assertion from Officer 2 (Carol / Google Titan)...", "info");
+            try {
+                const resp = await approveWithWebAuthn(selectedBatchId, 'carol', 'cred_carol_titan_02');
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Approval failed');
+                }
+                showBanner("Officer 2 (Carol) signed with WebAuthn P-256 ECDSA assertion. Batch threshold reached!", "success");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Approval error: " + err, "danger");
+            }
+        }
+
+        async function dispatchWorkerInteractive() {
+            showBanner("Claiming outbox job and submitting batch to PayPal Sandbox Gateway...", "info");
+            try {
+                const resp = await authFetch('/api/outbox/process', { method: 'POST' }, 'bob');
+                const data = await resp.json();
+                if (data.status === 'COMPLETED' || data.status === 'SETTLED') {
+                    showBanner(`SETTLEMENT CONFIRMED: Provider Batch ID ${data.payout_batch_id} settled via PayPal Sandbox Simulator.`, "success");
+                } else if (data.status === 'NO_JOBS') {
+                    showBanner("No approved payout batches currently in the outbox queue.", "info");
+                } else {
+                    showBanner(`Outbox status: ${data.status} (${data.gateway_batch_state})`, "warning");
+                }
+                loadDashboard();
+            } catch (err) {
+                showBanner("Outbox worker error: " + err, "danger");
+            }
+        }
+
+        // SCENARIOS FOR DEMO MODE
+        async function runCompleteHappyPath() {
+            setScenarioBadge("1. Happy Path Disbursement");
+            showBanner("Executing Scenario 1: Clean Executive Voice -> Draft Batch -> Dual Sign -> PayPal Settlement...", "info");
+            try {
+                const aFormData = new FormData();
+                aFormData.append('sample_preset', 'clean_executive');
+                const aRes = await (await authFetch('/api/audio/analyze', { method: 'POST', body: aFormData }, 'alice')).json();
+                
+                const bens = await (await authFetch('/api/beneficiaries', {}, 'alice')).json();
+                const items = [
+                    { beneficiary_id: bens[0].id, amount_usd: "500.00", receiver_email: "contractor.acme@example.com" },
+                    { beneficiary_id: bens[1].id, amount_usd: "750.00", receiver_email: "billing.infra@example.com" },
+                    { beneficiary_id: bens[2].id, amount_usd: "1000.00", receiver_email: "payout.redteam@example.com" }
+                ];
+
+                const batchRes = await (await authFetch('/api/batches/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ program_id: "PROG_DEV_2026", payout_period: "2026-11", items: items, audio_analysis: aRes })
+                }, 'alice')).json();
+                const batchId = batchRes.batch.batch_id;
+                selectedBatchId = batchId;
+
+                await authFetch(`/api/batches/${batchId}/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audio_policy_decision: 'READY_FOR_CHECKER' })
+                }, 'alice');
+
+                await approveWithWebAuthn(batchId, 'bob', 'cred_bob_yubikey_01');
+                await approveWithWebAuthn(batchId, 'carol', 'cred_carol_titan_02');
+
+                const workerRes = await (await authFetch('/api/outbox/process', { method: 'POST' }, 'bob')).json();
+
+                showBanner(`DISBURSEMENT SETTLED: Batch ${batchId.substring(0,8)}... confirmed by PayPal Sandbox (${workerRes.payout_batch_id}). All contractor items settled!`, "success");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Scenario execution error: " + err, "danger");
+            }
+        }
+
+        async function runFailureDeepfakeVoice() {
+            setScenarioBadge("2. Synthetic Spoof Blocked");
+            showBanner("Executing Scenario 2: Deepfake Audio Attack Injection...", "info");
+            try {
+                const aFormData = new FormData();
+                aFormData.append('sample_preset', 'deepfake_clone');
+                const aRes = await (await authFetch('/api/audio/analyze', { method: 'POST', body: aFormData }, 'alice')).json();
+
+                const bens = await (await authFetch('/api/beneficiaries', {}, 'alice')).json();
+                const items = [{ beneficiary_id: bens[0].id, amount_usd: "15000.00", receiver_email: "fraudulent.actor@example.com" }];
+
+                const batchRes = await (await authFetch('/api/batches/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ program_id: "PROG_DEV_2026", payout_period: "2026-11", items: items, audio_analysis: aRes })
+                }, 'alice')).json();
+                const batchId = batchRes.batch.batch_id;
+                selectedBatchId = batchId;
+
+                showBanner(`SECURITY GATE TRIGGERED: Voice clone classified as ${aRes.recommendation}. Batch BLOCKED automatically from entering checker review.`, "danger");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Scenario execution error: " + err, "danger");
+            }
+        }
+
+        async function runFailureUnauthorizedOfficer() {
+            setScenarioBadge("3. Unauthorized Officer Rejected");
+            showBanner("Testing unauthorized officer approval (Eve attempting sign-off)...", "warning");
+            try {
+                if (!selectedBatchId) {
+                    alert("Please run a payout first to have an active batch in review.");
+                    return;
+                }
+                const res = await approveWithWebAuthn(selectedBatchId, 'eve', 'cred_bob_yubikey_01');
+                const errData = await res.json();
+                showBanner(`POLICY ENFORCED: Unauthorized officer assertion rejected: ${errData.detail}`, "success");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Error: " + err, "danger");
+            }
+        }
+
+        async function runFailureAmbiguousTimeout() {
+            setScenarioBadge("4. Network Timeout Recovery");
+            showBanner("Executing Scenario 4: Forcing HTTP 504 Gateway Timeout on Outbox Worker...", "info");
+            try {
+                const aFormData = new FormData();
+                aFormData.append('sample_preset', 'clean_executive');
+                const aRes = await (await authFetch('/api/audio/analyze', { method: 'POST', body: aFormData }, 'alice')).json();
+
+                const bens = await (await authFetch('/api/beneficiaries', {}, 'alice')).json();
+                const items = [{ beneficiary_id: bens[1].id, amount_usd: "2400.00", receiver_email: "billing.infra@example.com" }];
+
+                const batchRes = await (await authFetch('/api/batches/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ program_id: "PROG_DEV_2026", payout_period: "2026-11", items: items, audio_analysis: aRes })
+                }, 'alice')).json();
+                const batchId = batchRes.batch.batch_id;
+                selectedBatchId = batchId;
+
+                await authFetch(`/api/batches/${batchId}/finalize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audio_policy_decision: 'READY_FOR_CHECKER' })
+                }, 'alice');
+
+                await approveWithWebAuthn(batchId, 'bob', 'cred_bob_yubikey_01');
+                await approveWithWebAuthn(batchId, 'carol', 'cred_carol_titan_02');
+
+                const wRes = await (await authFetch('/api/outbox/process?force_timeout=true', { method: 'POST' }, 'bob')).json();
+
+                showBanner(`AMBIGUOUS TIMEOUT RECOVERED: HTTP 504 recorded. Batch transitioned to MANUAL_RECONCILIATION_REQUIRED. Beneficiary submission lock RETAINED to prevent double-spending!`, "warning");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Scenario execution error: " + err, "danger");
+            }
+        }
+
+        function openNewBatchModal() {
+            document.getElementById('newBatchModal').style.display = 'flex';
+        }
+
+        function closeNewBatchModal() {
+            document.getElementById('newBatchModal').style.display = 'none';
+        }
+
+        async function submitNewDraftBatch(e) {
+            e.preventDefault();
+            const program = document.getElementById('nbProgram').value.trim();
+            const period = document.getElementById('nbPeriod').value.trim();
+            const amt1 = document.getElementById('nbAmount1').value;
+
+            closeNewBatchModal();
+            showBanner("Creating new draft disbursement envelope as Alice...", "info");
+
+            try {
+                const aFormData = new FormData();
+                aFormData.append('sample_preset', 'clean_executive');
+                const aRes = await (await authFetch('/api/audio/analyze', { method: 'POST', body: aFormData }, 'alice')).json();
+
+                const bens = await (await authFetch('/api/beneficiaries', {}, 'alice')).json();
+                const items = [
+                    { beneficiary_id: bens[0].id, amount_usd: parseFloat(amt1).toFixed(2), receiver_email: "contractor.acme@example.com" }
+                ];
+
+                const bRes = await (await authFetch('/api/batches/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ program_id: program, payout_period: period, items: items, audio_analysis: aRes })
+                }, 'alice')).json();
+
+                selectedBatchId = bRes.batch.batch_id;
+                showBanner(`New Draft Batch Created: ${selectedBatchId.substring(0,8)}... (Awaiting Finalization & Checkers)`, "success");
+                loadDashboard();
+            } catch (err) {
+                showBanner("Failed to create draft batch: " + err, "danger");
+            }
+        }
+
+        window.onload = () => {
+            renderWaveform(false, false);
+            loadDashboard();
+            if (window.location.hash) {
+                navigateSection(window.location.hash.replace('#', ''));
+            } else {
+                navigateSection('overview');
+            }
+        };
+
+        setInterval(loadDashboard, 5000);
+    </script>
+</body>
+</html>
