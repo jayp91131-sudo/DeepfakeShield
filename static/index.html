@@ -1639,6 +1639,17 @@
                             <audio id="reviewAudioPlayer" controls style="width: 100%; display: none;"></audio>
                         </div>
 
+                        <div id="aiRiskAssistantBox" style="margin-bottom: 16px; padding: 12px; background-color: #F8FAFC; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+                                <div>
+                                    <span style="font-size: 12.5px; font-weight: 600; color: var(--navy-900);">AI Risk Reviewer Assistant (Google Gemini — Advisory Only)</span>
+                                    <div style="font-size: 11px; color: var(--text-muted);">Explains sanitized DSP telemetry only. Cannot alter risk scores, classifications, or payout approvals.</div>
+                                </div>
+                                <button class="btn-secondary-sm" type="button" id="aiAssistBtn" onclick="requestAiRiskExplanation()">Explain Signal (Gemini)</button>
+                            </div>
+                            <div id="aiRiskAssistantOutput" style="display: none; font-size: 12px; margin-top: 8px;"></div>
+                        </div>
+
                         <div id="recordedReviewBox" style="display: none; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-main); background-color: #FAFAFC; margin-bottom: 12px;">
                             <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-900); margin-bottom: 8px;">Immutable Manual Review Record</div>
                             <div class="data-row"><span class="data-label">Human Reviewer Decision</span><span class="data-val mono" id="recordedReviewDecision">--</span></div>
@@ -3221,6 +3232,62 @@
                 showBanner("Verified audio evidence loaded for RISK_REVIEWER playback.", "info");
             } catch (err) {
                 showBanner("Audio evidence load failed: " + (err.message || err), "danger");
+            }
+        }
+
+        async function requestAiRiskExplanation() {
+            const outEl = document.getElementById('aiRiskAssistantOutput');
+            if (!selectedBatchId || !currentAudioReviewData) {
+                showBanner("No active audio review evidence loaded.", "warning");
+                return;
+            }
+            const evalId = (currentAudioReviewData.audio_evidence || {}).risk_evaluation_id || '';
+            if (outEl) {
+                outEl.style.display = 'block';
+                outEl.innerText = 'Requesting advisory explanation from Google Gemini...';
+            }
+            try {
+                const url = `/api/batches/${selectedBatchId}/audio-review/ai-assist` + (evalId ? `?evaluation_id=${encodeURIComponent(evalId)}` : '');
+                const resp = await authFetch(url, { method: 'POST' }, 'reviewer');
+                const data = await resp.json();
+                if (!resp.ok) {
+                    throw new Error(data.detail || 'AI assistant request failed');
+                }
+                if (data.status === 'NOT_CONFIGURED') {
+                    outEl.innerText = 'AI Risk Reviewer Assistant is NOT_CONFIGURED (GEMINI_API_KEY not set in local environment). No AI response generated.';
+                    return;
+                }
+                if (data.status !== 'SUCCESS' || !data.ai_interpretation) {
+                    outEl.innerText = 'AI assistant unavailable: ' + (data.error || 'Unknown error');
+                    return;
+                }
+                const ev = data.measured_evidence || {};
+                const ai = data.ai_interpretation;
+                const prov = data.provenance || {};
+                outEl.innerHTML = '';
+                const measuredDiv = document.createElement('div');
+                measuredDiv.style.marginBottom = '8px';
+                const measuredTitle = document.createElement('strong');
+                measuredTitle.textContent = `Measured DSP Evidence (${ev.analyzer_version || 'ACOUSTIC_FFT_HEURISTIC_V1'}): `;
+                measuredDiv.appendChild(measuredTitle);
+                measuredDiv.appendChild(document.createTextNode(
+                    `Decision=${ev.heuristic_recommendation}/${ev.heuristic_policy_decision}, `
+                    + `WADA SNR=${ev.wada_snr_db} dB, Flatness(mean)=${ev.spectral_flatness_mean}, `
+                    + `HF Ratio(mean)=${ev.high_frequency_energy_ratio_mean}, `
+                    + `SHA-256 Replay=${ev.sha256_replay_result}, FP Replay=${ev.acoustic_fingerprint_replay_result}.`
+                ));
+                const aiDiv = document.createElement('div');
+                const aiTitle = document.createElement('strong');
+                aiTitle.textContent = `AI-Generated Interpretation (Advisory Only — ${prov.model || 'gemini'} @ ${prov.generated_at || '--'}): `;
+                aiDiv.appendChild(aiTitle);
+                aiDiv.appendChild(document.createTextNode(`${ai.summary} | Guidance: ${ai.reviewer_guidance} | ${ai.limitations_notice}`));
+                outEl.appendChild(measuredDiv);
+                outEl.appendChild(aiDiv);
+            } catch (err) {
+                if (outEl) {
+                    outEl.style.display = 'block';
+                    outEl.innerText = 'AI assistant error: ' + (err.message || err);
+                }
             }
         }
 

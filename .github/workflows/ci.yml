@@ -115,6 +115,7 @@ jobs:
             tests/test_database_audio_gate_migration.py \
             tests/test_v10_1_5_manual_audio_review.py \
             tests/test_final_acceptance.py \
+            tests/test_ai_risk_assistant.py \
             tests/test_product_qa_and_ui.py::test_static_html_navigation_sections_and_honest_labeling \
             -v --tb=short --junitxml=test-results/junit.xml 2>&1 | tee test-results/pytest.log
 

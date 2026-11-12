@@ -66,6 +66,10 @@ from backend.payout_service import (
     submit_manual_audio_review,
 )
 from backend.outbox_worker import OutboxWorker
+from backend.ai_risk_assistant import (
+    generate_ai_risk_explanation,
+    get_ai_assistant_status,
+)
 from crypto_verifier import create_webauthn_assertion, validate_crypto_environment
 
 app = FastAPI(title="DeepfakeShield for PayPal", version="10.1.3")
@@ -739,6 +743,66 @@ def api_submit_manual_audio_review(
         if "already has an immutable manual review" in lower_msg or "unique" in lower_msg:
             raise HTTPException(status_code=409, detail=msg)
         raise HTTPException(status_code=400, detail=msg)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/ai-assistant/status")
+def api_ai_assistant_status(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """
+    Returns non-sensitive configuration status for the AI Risk Reviewer Assistant.
+    Never exposes GEMINI_API_KEY.
+    """
+    return get_ai_assistant_status()
+
+
+@app.post("/api/batches/{batch_id}/audio-review/ai-assist")
+def api_ai_assist_audio_review(
+    batch_id: str,
+    evaluation_id: Optional[str] = Query(None),
+    current_user: Dict[str, Any] = Depends(require_role("RISK_REVIEWER")),
+):
+    """
+    AI Risk Reviewer Assistant (Advisory Only).
+    Explains deterministic DSP telemetry for an authorized RISK_REVIEWER using
+    Google Gemini API. Never transmits raw audio, beneficiary PII, or credentials,
+    and never alters risk scores, classifications, or payout/approval state.
+    """
+    try:
+        evidence = get_audio_review_evidence(batch_id, evaluation_id=evaluation_id)
+        eval_id = evidence.get("audio_evidence", {}).get("risk_evaluation_id")
+        result = generate_ai_risk_explanation(evidence, risk_evaluation_id=eval_id)
+
+        if result.get("status") == "SUCCESS":
+            try:
+                from backend.payout_service import record_audit_event
+                prov = result.get("provenance") or {}
+                record_audit_event(
+                    actor_user_id=current_user["user_id"],
+                    actor_role=current_user["role"],
+                    event_type="AI_RISK_REVIEW_ASSISTED",
+                    entity_type="risk_evaluations",
+                    entity_id=str(eval_id or batch_id),
+                    payload={
+                        "batch_id": str(batch_id),
+                        "risk_evaluation_id": str(eval_id) if eval_id else None,
+                        "provider": prov.get("provider"),
+                        "model": prov.get("model"),
+                        "interaction_id": prov.get("interaction_id"),
+                        "generated_at": prov.get("generated_at"),
+                        "authority": prov.get("authority"),
+                    },
+                )
+            except Exception:
+                pass
+
+        return result
+    except HTTPException:
+        raise
+    except AudioRiskGateError as ae:
+        raise HTTPException(status_code=404, detail=str(ae))
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
