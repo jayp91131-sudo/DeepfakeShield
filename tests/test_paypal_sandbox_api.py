@@ -351,6 +351,8 @@ def test_sandbox_api_never_displays_as_simulator_across_endpoints(monkeypatch):
     """Proves SANDBOX_API (even unconfigured or failed) never reports SIMULATOR or LIVE."""
     from backend.main import api_public_status, api_paypal_health
 
+    # Prevent local .env from reloading host PayPal credentials during isolated test execution
+    monkeypatch.setattr("backend.paypal_client.load_env_file", lambda *a, **k: False)
     monkeypatch.setenv("PAYPAL_PROVIDER_MODE", "SANDBOX_API")
     monkeypatch.delenv("PAYPAL_CLIENT_ID", raising=False)
     monkeypatch.delenv("PAYPAL_CLIENT_SECRET", raising=False)

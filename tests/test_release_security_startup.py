@@ -99,8 +99,16 @@ def test_no_hardcoded_fallback_constants_on_crypto_or_database_modules():
     for removed in ("DEFAULT_ATTESTATION_SECRET", "DEFAULT_BLIND_INDEX_KEY", "DEFAULT_AUTH_ASSERTION_KEY"):
         assert not hasattr(crypto_verifier, removed), f"{removed} must not exist on crypto_verifier"
         assert not hasattr(db_mod, removed), f"{removed} must not exist on backend.database"
-    for removed_seed in ("BOB_DETERMINISTIC_SEED", "CAROL_DETERMINISTIC_SEED"):
-        assert not hasattr(db_mod, removed_seed), f"{removed_seed} must not be exported on backend.database"
+    for removed_seed in (
+        "BOB_DETERMINISTIC_SEED",
+        "CAROL_DETERMINISTIC_SEED",
+        "_DEMO_BOB_SEED",
+        "_DEMO_CAROL_SEED",
+        "_DEMO_SAMPLE_DEK_HEX",
+        "get_demo_officer_seed",
+        "get_demo_sample_dek",
+    ):
+        assert not hasattr(db_mod, removed_seed), f"{removed_seed} must not exist on backend.database"
 
 
 def test_normal_mode_fails_closed_without_explicit_credentials(monkeypatch):
@@ -126,13 +134,11 @@ def test_normal_mode_fails_closed_without_explicit_credentials(monkeypatch):
         with pytest.raises(RuntimeError, match=db_var):
             db_mod._resolve_db_password(db_var)
 
-    # Demo secrets, seeds, passwords, and static bearer tokens fail closed outside DEMO_MODE=true
+    # Demo secrets, ephemeral keys, passwords, and static bearer tokens fail closed outside DEMO_MODE=true
     with pytest.raises(RuntimeError, match="DEMO_MODE=true"):
         db_mod.seed_demo_data()
     with pytest.raises(RuntimeError, match="DEMO_MODE=true"):
-        db_mod.get_demo_officer_seed(db_mod.BOB_CRED_ID)
-    with pytest.raises(RuntimeError, match="DEMO_MODE=true"):
-        db_mod.get_demo_sample_dek()
+        db_mod._get_ephemeral_demo_officer_key(db_mod.BOB_CRED_ID)
     with pytest.raises(RuntimeError, match="DEMO_MODE=true"):
         main_mod.get_demo_operator_password("alice_ap_maker")
     with pytest.raises(RuntimeError, match="DEMO_MODE=true"):
@@ -252,13 +258,23 @@ def test_demo_mode_enables_sandbox_fallbacks_and_blocks_paypal_production(monkey
     monkeypatch.setenv("BLIND_INDEX_KEY", TEST_BLIND_INDEX_KEY_HEX)
     monkeypatch.setenv("AUTH_ASSERTION_KEY", TEST_AUTH_ASSERTION_KEY_HEX)
 
+    db_mod.clear_ephemeral_demo_keys()
     db_mod.validate_demo_mode_paypal_safety()
     main_mod.validate_runtime_security_configuration()
     assert db_mod._resolve_db_password("APP_PASSWORD") == "app_secret_pass"
     keys = db_mod.get_officer_private_keys()
     assert db_mod.BOB_CRED_ID in keys and db_mod.CAROL_CRED_ID in keys
-    assert len(db_mod.get_demo_sample_dek()) == 32
+    # Ephemeral demo keys must never equal static test fixture seeds and must rotate when cleared
+    bob_val_1 = keys[db_mod.BOB_CRED_ID].private_numbers().private_value
+    assert bob_val_1 != TEST_BOB_DETERMINISTIC_SEED
+    db_mod.clear_ephemeral_demo_keys()
+    keys_rotated = db_mod.get_officer_private_keys()
+    assert keys_rotated[db_mod.BOB_CRED_ID].private_numbers().private_value != bob_val_1
     assert main_mod._verify_operator_credential("alice_ap_maker", "alice_secure_maker_pass_2026")
+    # Switching back to normal mode clears ephemeral demo keys immediately
+    monkeypatch.setenv("DEMO_MODE", "false")
+    assert db_mod.get_officer_private_keys() == {}
+    monkeypatch.setenv("DEMO_MODE", "true")
 
     for prod_url in (
         "https://api-m.paypal.com",
@@ -390,3 +406,118 @@ def test_subprocess_clean_import_with_valid_keys_has_empty_demo_tables():
     )
     assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
     assert "CLEAN_IMPORT_OK" in proc.stdout
+
+
+def test_multiprocess_demo_mode_fails_closed_without_explicit_pems_and_verifies_across_workers(monkeypatch):
+    _clear_security_env(monkeypatch)
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.setenv("PAYPAL_PROVIDER_MODE", "SIMULATOR")
+    monkeypatch.setenv("PAYPAL_BASE_URL", "https://api-m.sandbox.paypal.com")
+    monkeypatch.setenv("STRICT_CRYPTO_ENFORCEMENT", "true")
+    monkeypatch.setenv("ATTESTATION_SECRET", TEST_ATTESTATION_SECRET_HEX)
+    monkeypatch.setenv("BLIND_INDEX_KEY", TEST_BLIND_INDEX_KEY_HEX)
+    monkeypatch.setenv("AUTH_ASSERTION_KEY", TEST_AUTH_ASSERTION_KEY_HEX)
+    db_mod.clear_ephemeral_demo_keys()
+
+    for env_key, env_val in (("WEB_CONCURRENCY", "2"), ("DEMO_MULTI_PROCESS", "true")):
+        monkeypatch.delenv("WEB_CONCURRENCY", raising=False)
+        monkeypatch.delenv("DEMO_MULTI_PROCESS", raising=False)
+        monkeypatch.setenv(env_key, env_val)
+        with pytest.raises(RuntimeError, match="Multi-process DEMO_MODE"):
+            db_mod.load_officer_private_keys()
+        with pytest.raises(RuntimeError, match="Multi-process DEMO_MODE"):
+            main_mod.validate_runtime_security_configuration()
+
+    # Supplying explicit demo-only PEM keys allows multi-process startup and cross-worker verification
+    bob_key = ec.generate_private_key(ec.SECP256R1())
+    carol_key = ec.generate_private_key(ec.SECP256R1())
+    bob_pem = bob_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode("utf-8")
+    carol_pem = carol_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode("utf-8")
+    monkeypatch.setenv("BOB_SIGNING_PRIVATE_KEY_PEM", bob_pem)
+    monkeypatch.setenv("CAROL_SIGNING_PRIVATE_KEY_PEM", carol_pem)
+
+    main_mod.validate_runtime_security_configuration()
+    worker_a_keys = db_mod.load_officer_private_keys()
+    db_mod.clear_ephemeral_demo_keys()
+    worker_b_keys = db_mod.load_officer_private_keys()
+
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+
+    pub_spki = db_mod._public_key_cose_bytes(worker_a_keys[db_mod.BOB_CRED_ID])
+    loaded_pub = load_der_public_key(pub_spki)
+    sig = worker_b_keys[db_mod.BOB_CRED_ID].sign(b"cross-worker-challenge", ec.ECDSA(hashes.SHA256()))
+    loaded_pub.verify(sig, b"cross-worker-challenge", ec.ECDSA(hashes.SHA256()))
+
+
+def test_seed_demo_data_is_atomic_updates_all_crypto_fields_and_never_stores_private_keys(monkeypatch):
+    _clear_security_env(monkeypatch)
+    monkeypatch.setenv("DEMO_MODE", "true")
+    monkeypatch.setenv("PAYPAL_PROVIDER_MODE", "SIMULATOR")
+    monkeypatch.setenv("PAYPAL_BASE_URL", "https://api-m.sandbox.paypal.com")
+    monkeypatch.setenv("STRICT_CRYPTO_ENFORCEMENT", "true")
+    monkeypatch.setenv("ATTESTATION_SECRET", TEST_ATTESTATION_SECRET_HEX)
+    monkeypatch.setenv("BLIND_INDEX_KEY", TEST_BLIND_INDEX_KEY_HEX)
+    monkeypatch.setenv("AUTH_ASSERTION_KEY", TEST_AUTH_ASSERTION_KEY_HEX)
+    db_mod.clear_ephemeral_demo_keys()
+
+    executed_sql = []
+    autocommit_args = []
+
+    class FakeCursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, sql, params=None):
+            executed_sql.append(sql)
+
+    class FakeConn:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def cursor(self):
+            return FakeCursor()
+
+    def fake_get_admin_conn(autocommit=True):
+        autocommit_args.append(autocommit)
+        return FakeConn()
+
+    monkeypatch.setattr(db_mod, "get_admin_conn", fake_get_admin_conn)
+
+    db_mod.seed_demo_data()
+    db_mod.seed_demo_data()
+
+    assert autocommit_args == [False, False]
+    combined_sql = "\n".join(executed_sql)
+    assert "BEGIN PRIVATE KEY" not in combined_sql
+    assert "EC PRIVATE KEY" not in combined_sql
+
+    beneficiary_inserts = [s for s in executed_sql if "INSERT INTO beneficiaries" in s]
+    assert len(beneficiary_inserts) == 6
+    for stmt in beneficiary_inserts:
+        for col in (
+            "key_id = EXCLUDED.key_id",
+            "wrapped_dek = EXCLUDED.wrapped_dek",
+            "iv_nonce = EXCLUDED.iv_nonce",
+            "auth_tag = EXCLUDED.auth_tag",
+            "encrypted_destination = EXCLUDED.encrypted_destination",
+            "aad_text = EXCLUDED.aad_text",
+            "destination_digest = EXCLUDED.destination_digest",
+            "destination_blind_index = EXCLUDED.destination_blind_index",
+        ):
+            assert col in stmt
+
+    # Verify wrapped_dek, iv_nonce, auth_tag, and ciphertext differ across all 6 beneficiary inserts
+    import re
+    bytea_fields = [re.findall(r"'\\x([0-9a-f]{24,})'::bytea", stmt) for stmt in beneficiary_inserts]
+    assert all(len(fields) == 4 for fields in bytea_fields), bytea_fields
+    assert len({fields[0] for fields in bytea_fields}) == 6  # wrapped_dek
+    assert len({fields[1] for fields in bytea_fields}) == 6  # iv_nonce
+    assert len({fields[2] for fields in bytea_fields}) == 6  # auth_tag
+    assert len({fields[3] for fields in bytea_fields}) == 6  # encrypted_destination

@@ -90,6 +90,7 @@ def validate_runtime_security_configuration() -> None:
         validate_crypto_environment()
 
     if demo_enabled:
+        get_officer_private_keys()
         return
 
     # Normal startup requires explicit database role credentials (never insecure defaults)

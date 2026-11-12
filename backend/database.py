@@ -107,43 +107,55 @@ USER_EVE_UNAUTHORIZED = "10000000-0000-0000-0000-000000000005"
 BOB_CRED_ID = "cred_bob_yubikey_01"
 CAROL_CRED_ID = "cred_carol_titan_02"
 
-# Demo-only deterministic material — NEVER exposed or usable outside explicit DEMO_MODE=true
-_DEMO_BOB_SEED = 0x1111111122222222333333334444444455555555666666667777777788888888
-_DEMO_CAROL_SEED = 0x8888888877777777666666665555555544444444333333332222222211111111
-_DEMO_SAMPLE_DEK_HEX = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff"
+# Process-scoped ephemeral demo officer keys — populated and usable ONLY when DEMO_MODE=true.
+# For restart-persistent demo signing keys, configure explicit *_SIGNING_PRIVATE_KEY_PEM or OFFICER_SIGNING_KEYS_JSON.
+_EPHEMERAL_DEMO_OFFICER_KEYS: Dict[str, Any] = {}
 
-def get_demo_officer_seed(cred_id: str) -> int:
-    """Returns deterministic demo officer seed ONLY when DEMO_MODE=true (non-production only)."""
+def clear_ephemeral_demo_keys() -> None:
+    """Clears process-scoped ephemeral demo signing keys."""
+    _EPHEMERAL_DEMO_OFFICER_KEYS.clear()
+
+def _get_ephemeral_demo_officer_key(cred_id: str):
+    """
+    Returns a process-scoped ephemeral P-256 demo signing key ONLY when DEMO_MODE=true
+    (non-production PayPal only). Raises RuntimeError outside DEMO_MODE=true.
+    """
     if not is_demo_mode():
-        raise RuntimeError("CRITICAL SECURITY ERROR: Demo officer signing seeds are disabled outside DEMO_MODE=true.")
+        _EPHEMERAL_DEMO_OFFICER_KEYS.clear()
+        raise RuntimeError("CRITICAL SECURITY ERROR: Ephemeral demo signing keys are disabled outside DEMO_MODE=true.")
     validate_demo_mode_paypal_safety()
-    if cred_id == BOB_CRED_ID:
-        return _DEMO_BOB_SEED
-    if cred_id == CAROL_CRED_ID:
-        return _DEMO_CAROL_SEED
-    raise ValueError(f"Unknown demo credential_id: {cred_id}")
+    if cred_id not in (BOB_CRED_ID, CAROL_CRED_ID):
+        raise ValueError(f"Unknown demo credential_id: {cred_id}")
+    if cred_id not in _EPHEMERAL_DEMO_OFFICER_KEYS:
+        _EPHEMERAL_DEMO_OFFICER_KEYS[cred_id] = ec.generate_private_key(ec.SECP256R1())
+    return _EPHEMERAL_DEMO_OFFICER_KEYS[cred_id]
 
-def get_demo_sample_dek() -> bytes:
-    """Returns demo sample DEK ONLY when DEMO_MODE=true (non-production only)."""
-    if not is_demo_mode():
-        raise RuntimeError("CRITICAL SECURITY ERROR: Demo sample DEK is disabled outside DEMO_MODE=true.")
-    validate_demo_mode_paypal_safety()
-    return bytes.fromhex(_DEMO_SAMPLE_DEK_HEX)
-
-def _derive_officer_keypair(seed_val: int):
-    priv = ec.derive_private_key(seed_val, ec.SECP256R1())
-    pub = priv.public_key()
-    cose_bytes = pub.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
-    return priv, pub, cose_bytes
+def _public_key_cose_bytes(priv_key) -> bytes:
+    return priv_key.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
 
 def _load_pem_key(pem_str: str):
     normalized = pem_str.replace("\\n", "\n").encode("utf-8")
     return load_pem_private_key(normalized, password=None)
 
+def _is_multiprocess_deployment() -> bool:
+    """Returns True when runtime configuration indicates multiple worker processes."""
+    if os.environ.get("DEMO_MULTI_PROCESS", "").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    raw_concurrency = os.environ.get("WEB_CONCURRENCY", "").strip()
+    if raw_concurrency:
+        try:
+            return int(raw_concurrency) > 1
+        except ValueError:
+            return True
+    return False
+
+
 def load_officer_private_keys() -> Dict[str, Any]:
     """
     Loads officer WebAuthn private keys from explicit environment configuration.
-    Deterministic demo seeds are permitted ONLY when DEMO_MODE=true (non-production PayPal only).
+    When DEMO_MODE=true (non-production PayPal only) in a single-process deployment,
+    any unconfigured demo officer credential receives a freshly generated process-scoped
+    ephemeral P-256 key. Multi-process demo deployments require explicit PEM keys and fail closed.
     Returns an empty mapping in normal startup when no explicit env signing keys are supplied.
     """
     validate_demo_mode_paypal_safety()
@@ -167,8 +179,17 @@ def load_officer_private_keys() -> Dict[str, Any]:
         keys[CAROL_CRED_ID] = _load_pem_key(carol_pem)
 
     if is_demo_mode():
-        keys.setdefault(BOB_CRED_ID, ec.derive_private_key(get_demo_officer_seed(BOB_CRED_ID), ec.SECP256R1()))
-        keys.setdefault(CAROL_CRED_ID, ec.derive_private_key(get_demo_officer_seed(CAROL_CRED_ID), ec.SECP256R1()))
+        missing_demo_creds = [cred_id for cred_id in (BOB_CRED_ID, CAROL_CRED_ID) if cred_id not in keys]
+        if missing_demo_creds and _is_multiprocess_deployment():
+            raise RuntimeError(
+                "CRITICAL SECURITY ERROR: Multi-process DEMO_MODE deployments cannot use process-scoped "
+                "ephemeral officer keys. Configure explicit demo-only BOB_SIGNING_PRIVATE_KEY_PEM and "
+                "CAROL_SIGNING_PRIVATE_KEY_PEM (or OFFICER_SIGNING_KEYS_JSON) across worker processes."
+            )
+        keys.setdefault(BOB_CRED_ID, _get_ephemeral_demo_officer_key(BOB_CRED_ID))
+        keys.setdefault(CAROL_CRED_ID, _get_ephemeral_demo_officer_key(CAROL_CRED_ID))
+    else:
+        _EPHEMERAL_DEMO_OFFICER_KEYS.clear()
 
     return keys
 
@@ -215,7 +236,7 @@ def seed_demo_data():
             "CRITICAL SECURITY ERROR: seed_demo_data() is restricted to DEMO_MODE=true and cannot run at normal startup."
         )
     validate_demo_mode_paypal_safety()
-    with get_admin_conn(autocommit=True) as conn:
+    with get_admin_conn(autocommit=False) as conn:
         with conn.cursor() as cur:
             # 1. Standard users
             cur.execute(f"""
@@ -259,9 +280,12 @@ def seed_demo_data():
                     auth_assertion_key = EXCLUDED.auth_assertion_key;
             """)
 
-            # 4. Generate WebAuthn credentials for Bob & Carol (demo-only deterministic seeds)
-            bob_priv, bob_pub, bob_cose = _derive_officer_keypair(get_demo_officer_seed(BOB_CRED_ID))
-            carol_priv, carol_pub, carol_cose = _derive_officer_keypair(get_demo_officer_seed(CAROL_CRED_ID))
+            # 4. Register WebAuthn credentials for Bob & Carol (explicit demo PEMs or ephemeral process-scoped keys)
+            demo_keys = load_officer_private_keys()
+            bob_priv = demo_keys[BOB_CRED_ID]
+            carol_priv = demo_keys[CAROL_CRED_ID]
+            bob_cose = _public_key_cose_bytes(bob_priv)
+            carol_cose = _public_key_cose_bytes(carol_priv)
             OFFICER_PRIVATE_KEYS[BOB_CRED_ID] = bob_priv
             OFFICER_PRIVATE_KEYS[CAROL_CRED_ID] = carol_priv
 
@@ -275,30 +299,36 @@ def seed_demo_data():
                     sign_count = EXCLUDED.sign_count;
             """)
 
-            # 5. Seed Contractor Beneficiaries
+            # 5. Seed Contractor Beneficiaries (fresh CSPRNG ephemeral DEK per beneficiary row)
             contractors = [
                 ("30000000-0000-0000-0000-000000000001", "Acme Engineering Corp", "contractor.acme@example.com", "PROG_DEV_2026"),
                 ("30000000-0000-0000-0000-000000000002", "Cloud Infrastructure Ltd", "billing.infra@example.com", "PROG_INFRA_2026"),
                 ("30000000-0000-0000-0000-000000000003", "Security Red Team LLC", "payout.redteam@example.com", "PROG_SEC_2026")
             ]
 
-            sample_dek = get_demo_sample_dek()
             for c_id, name, email, prog in contractors:
+                ephemeral_dek = os.urandom(32)
                 blind_idx = compute_recipient_blind_index(email, blind_key)
                 dest_digest = hashlib.sha256(email.encode('utf-8')).hexdigest()
-                nonce, ct, tag = encrypt_payload(sample_dek, email.encode('utf-8'), b"BENEFICIARY_REGISTRY")
+                nonce, ct, tag = encrypt_payload(ephemeral_dek, email.encode('utf-8'), b"BENEFICIARY_REGISTRY")
                 cur.execute(f"""
                     INSERT INTO beneficiaries (
                         id, legal_name, version, verification_status, key_id, wrapped_dek, iv_nonce,
                         auth_tag, aad_text, encrypted_destination, destination_blind_index, destination_digest,
                         program_ref, consent_evidence_hash, registered_contact_phone_enc, registered_contact_email_enc
                     ) VALUES (
-                        '{c_id}', '{name}', 1, 'VERIFIED', '{KEY_ID_ACTIVE}', '\\x{sample_dek.hex()}'::bytea,
+                        '{c_id}', '{name}', 1, 'VERIFIED', '{KEY_ID_ACTIVE}', '\\x{ephemeral_dek.hex()}'::bytea,
                         '\\x{nonce.hex()}'::bytea, '\\x{tag.hex()}'::bytea, 'BENEFICIARY_REGISTRY',
                         '\\x{ct.hex()}'::bytea, '{blind_idx}', '{dest_digest}', '{prog}',
                         '{hashlib.sha256(name.encode()).hexdigest()}', '\\x01'::bytea, '\\x02'::bytea
                     ) ON CONFLICT (id) DO UPDATE SET 
                         verification_status = 'VERIFIED',
+                        key_id = EXCLUDED.key_id,
+                        wrapped_dek = EXCLUDED.wrapped_dek,
+                        iv_nonce = EXCLUDED.iv_nonce,
+                        auth_tag = EXCLUDED.auth_tag,
+                        encrypted_destination = EXCLUDED.encrypted_destination,
+                        aad_text = EXCLUDED.aad_text,
                         destination_digest = EXCLUDED.destination_digest,
                         destination_blind_index = EXCLUDED.destination_blind_index;
                 """)

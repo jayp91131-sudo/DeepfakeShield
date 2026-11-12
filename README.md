@@ -188,7 +188,7 @@ cp .env.example .env
 Key settings in `.env`:
 
 1. **Runtime Security Policy (`DEMO_MODE=false` & `STRICT_CRYPTO_ENFORCEMENT=true` by default):**
-   - By default (`DEMO_MODE=false`), normal application startup fails closed unless all required database role passwords, operator authentication credentials, and KMS cryptographic signing keys are explicitly supplied via environment variables. No fallback passwords, pre-seeded bearer tokens, or deterministic officer signing keys are active outside explicit `DEMO_MODE=true`.
+   - By default (`DEMO_MODE=false`), normal application startup fails closed unless all required database role passwords, operator authentication credentials, and KMS cryptographic signing keys are explicitly supplied via environment variables. No fallback passwords, pre-seeded bearer tokens, or ephemeral demo officer signing keys are active outside explicit `DEMO_MODE=true`.
    - `STRICT_CRYPTO_ENFORCEMENT` is enabled by default and cannot be disabled outside `DEMO_MODE=true`.
    - `DEMO_MODE=true` is strictly blocked at startup and inside `PayPalClient` whenever `PAYPAL_BASE_URL` targets a PayPal production endpoint (e.g., `api-m.paypal.com` / `api.paypal.com`).
 2. **PostgreSQL Connection & Role Passwords:**
@@ -255,7 +255,7 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
 
 ## Demo Instructions
 
-> Demo fixture seeding (`seed_demo_data()`), fallback operator/database passwords, pre-seeded demo bearer tokens, and deterministic WebAuthn key simulation require explicit `DEMO_MODE=true` (and are blocked against PayPal production endpoints).
+> Demo fixture seeding (`seed_demo_data()`), fallback operator/database passwords, pre-seeded demo bearer tokens, and single-process ephemeral WebAuthn demo keys require explicit `DEMO_MODE=true` (and are blocked against PayPal production endpoints). Multi-process demo deployments (`WEB_CONCURRENCY > 1` or `DEMO_MULTI_PROCESS=true`) require explicit `BOB_SIGNING_PRIVATE_KEY_PEM` and `CAROL_SIGNING_PRIVATE_KEY_PEM` (or `OFFICER_SIGNING_KEYS_JSON`) and fail closed otherwise.
 
 1. **Enable Local Sandbox Demo Mode in `.env`:**
    ```ini
@@ -287,7 +287,7 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
 
 ### Current Limitations
 - **Heuristic Voice Detector Only:** `ACOUSTIC_FFT_HEURISTIC_V1` is a synthetic/spectral baseline (`spectral_flatness`, `> 3500 Hz` energy ratio, WADA SNR) with no neural anti-spoofing checkpoint (`AASIST`), yielding high manual-review rates (`NEEDS_REVIEW`) on real human microphone captures.
-- **No Hardware FIDO2 Device Flow Live:** WebAuthn P-256 signature verification is enforced cryptographically in backend + DB using explicit `DEMO_MODE=true` test keypairs or environment-supplied PEM keys rather than physical USB security keys in a browser ceremony.
+- **No Hardware FIDO2 Device Flow Live:** WebAuthn P-256 signature verification is enforced cryptographically in backend + DB using single-process ephemeral `DEMO_MODE=true` keypairs or environment-supplied PEM keys rather than physical USB security keys in a browser ceremony.
 - **Local File Replay Registry:** Anti-replay deduplication stores hashes in a local lock-guarded JSON file (`audio_hash_registry.json`) rather than a distributed store.
 - **No End-to-End Live PayPal Dollar Payout Completed Yet:** Live Sandbox OAuth and schema gates are verified, while full manual-review -> dual-officer approval -> live Sandbox `/v1/payments/payouts` settlement remains to be completed cleanly end-to-end.
 
