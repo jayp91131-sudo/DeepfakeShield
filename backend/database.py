@@ -20,9 +20,9 @@ from cryptography.hazmat.primitives.serialization import (
     load_pem_private_key,
 )
 from crypto_verifier import (
-    DEFAULT_ATTESTATION_SECRET,
-    DEFAULT_BLIND_INDEX_KEY,
-    DEFAULT_AUTH_ASSERTION_KEY,
+    get_attestation_secret,
+    get_blind_index_key,
+    get_auth_assertion_key,
     compute_recipient_blind_index,
     encrypt_payload,
     generate_webauthn_keypair
@@ -107,9 +107,28 @@ USER_EVE_UNAUTHORIZED = "10000000-0000-0000-0000-000000000005"
 BOB_CRED_ID = "cred_bob_yubikey_01"
 CAROL_CRED_ID = "cred_carol_titan_02"
 
-# Demo-only deterministic seeds — NEVER active outside explicit DEMO_MODE=true
-BOB_DETERMINISTIC_SEED = 0x1111111122222222333333334444444455555555666666667777777788888888
-CAROL_DETERMINISTIC_SEED = 0x8888888877777777666666665555555544444444333333332222222211111111
+# Demo-only deterministic material — NEVER exposed or usable outside explicit DEMO_MODE=true
+_DEMO_BOB_SEED = 0x1111111122222222333333334444444455555555666666667777777788888888
+_DEMO_CAROL_SEED = 0x8888888877777777666666665555555544444444333333332222222211111111
+_DEMO_SAMPLE_DEK_HEX = "11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff"
+
+def get_demo_officer_seed(cred_id: str) -> int:
+    """Returns deterministic demo officer seed ONLY when DEMO_MODE=true (non-production only)."""
+    if not is_demo_mode():
+        raise RuntimeError("CRITICAL SECURITY ERROR: Demo officer signing seeds are disabled outside DEMO_MODE=true.")
+    validate_demo_mode_paypal_safety()
+    if cred_id == BOB_CRED_ID:
+        return _DEMO_BOB_SEED
+    if cred_id == CAROL_CRED_ID:
+        return _DEMO_CAROL_SEED
+    raise ValueError(f"Unknown demo credential_id: {cred_id}")
+
+def get_demo_sample_dek() -> bytes:
+    """Returns demo sample DEK ONLY when DEMO_MODE=true (non-production only)."""
+    if not is_demo_mode():
+        raise RuntimeError("CRITICAL SECURITY ERROR: Demo sample DEK is disabled outside DEMO_MODE=true.")
+    validate_demo_mode_paypal_safety()
+    return bytes.fromhex(_DEMO_SAMPLE_DEK_HEX)
 
 def _derive_officer_keypair(seed_val: int):
     priv = ec.derive_private_key(seed_val, ec.SECP256R1())
@@ -148,8 +167,8 @@ def load_officer_private_keys() -> Dict[str, Any]:
         keys[CAROL_CRED_ID] = _load_pem_key(carol_pem)
 
     if is_demo_mode():
-        keys.setdefault(BOB_CRED_ID, ec.derive_private_key(BOB_DETERMINISTIC_SEED, ec.SECP256R1()))
-        keys.setdefault(CAROL_CRED_ID, ec.derive_private_key(CAROL_DETERMINISTIC_SEED, ec.SECP256R1()))
+        keys.setdefault(BOB_CRED_ID, ec.derive_private_key(get_demo_officer_seed(BOB_CRED_ID), ec.SECP256R1()))
+        keys.setdefault(CAROL_CRED_ID, ec.derive_private_key(get_demo_officer_seed(CAROL_CRED_ID), ec.SECP256R1()))
 
     return keys
 
@@ -222,14 +241,17 @@ def seed_demo_data():
                 ON CONFLICT (key_id) DO UPDATE SET is_active = TRUE;
             """)
 
-            # 3. Internal security keys (isolated)
+            # 3. Internal security keys (isolated, explicitly configured via environment)
+            attest_key = get_attestation_secret()
+            blind_key = get_blind_index_key()
+            auth_key = get_auth_assertion_key()
             cur.execute(f"""
                 INSERT INTO internal_security_keys (key_id, secret_attestation_key, blind_index_key, auth_assertion_key)
                 VALUES (
                     '{KEY_ID_ACTIVE}',
-                    decode('{DEFAULT_ATTESTATION_SECRET.hex()}', 'hex'),
-                    decode('{DEFAULT_BLIND_INDEX_KEY.hex()}', 'hex'),
-                    decode('{DEFAULT_AUTH_ASSERTION_KEY.hex()}', 'hex')
+                    decode('{attest_key.hex()}', 'hex'),
+                    decode('{blind_key.hex()}', 'hex'),
+                    decode('{auth_key.hex()}', 'hex')
                 )
                 ON CONFLICT (key_id) DO UPDATE SET
                     secret_attestation_key = EXCLUDED.secret_attestation_key,
@@ -237,9 +259,9 @@ def seed_demo_data():
                     auth_assertion_key = EXCLUDED.auth_assertion_key;
             """)
 
-            # 4. Generate WebAuthn credentials for Bob & Carol
-            bob_priv, bob_pub, bob_cose = _derive_officer_keypair(BOB_DETERMINISTIC_SEED)
-            carol_priv, carol_pub, carol_cose = _derive_officer_keypair(CAROL_DETERMINISTIC_SEED)
+            # 4. Generate WebAuthn credentials for Bob & Carol (demo-only deterministic seeds)
+            bob_priv, bob_pub, bob_cose = _derive_officer_keypair(get_demo_officer_seed(BOB_CRED_ID))
+            carol_priv, carol_pub, carol_cose = _derive_officer_keypair(get_demo_officer_seed(CAROL_CRED_ID))
             OFFICER_PRIVATE_KEYS[BOB_CRED_ID] = bob_priv
             OFFICER_PRIVATE_KEYS[CAROL_CRED_ID] = carol_priv
 
@@ -260,9 +282,9 @@ def seed_demo_data():
                 ("30000000-0000-0000-0000-000000000003", "Security Red Team LLC", "payout.redteam@example.com", "PROG_SEC_2026")
             ]
 
-            sample_dek = bytes.fromhex("11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff")
+            sample_dek = get_demo_sample_dek()
             for c_id, name, email, prog in contractors:
-                blind_idx = compute_recipient_blind_index(email, DEFAULT_BLIND_INDEX_KEY)
+                blind_idx = compute_recipient_blind_index(email, blind_key)
                 dest_digest = hashlib.sha256(email.encode('utf-8')).hexdigest()
                 nonce, ct, tag = encrypt_payload(sample_dek, email.encode('utf-8'), b"BENEFICIARY_REGISTRY")
                 cur.execute(f"""

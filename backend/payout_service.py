@@ -37,7 +37,6 @@ from backend.database import (
     USER_ALICE_MAKER,
     USER_BOB_CHECKER1,
     USER_CAROL_CHECKER2,
-    DEFAULT_BLIND_INDEX_KEY,
     OFFICER_PRIVATE_KEYS
 )
 from crypto_verifier import (
@@ -47,7 +46,8 @@ from crypto_verifier import (
     create_webauthn_assertion,
     verify_webauthn_assertion,
     ENVELOPE_VERSION,
-    DEFAULT_ATTESTATION_SECRET
+    get_attestation_secret,
+    get_blind_index_key,
 )
 
 def log_audit_event(
@@ -127,7 +127,7 @@ def create_draft_batch(
 
                 receiver_email = it["receiver_email"].strip().lower()
                 calc_digest = hashlib.sha256(receiver_email.encode('utf-8')).hexdigest()
-                calc_blind = compute_recipient_blind_index(receiver_email, DEFAULT_BLIND_INDEX_KEY)
+                calc_blind = compute_recipient_blind_index(receiver_email, get_blind_index_key())
 
                 if calc_digest != ben["destination_digest"] or calc_blind != ben["destination_blind_index"]:
                     raise ValueError(f"Receiver email mismatch for beneficiary {ben['legal_name']}")
@@ -791,7 +791,7 @@ def finalize_batch(
                 batch_id=uuid.UUID(batch_id),
                 snapshot_id=snapshot_id,
                 key_id=uuid.UUID(KEY_ID_ACTIVE),
-                attestation_secret=DEFAULT_ATTESTATION_SECRET,
+                attestation_secret=get_attestation_secret(),
                 wrapped_dek=dek
             )
             attestation = attestation_res.attestation

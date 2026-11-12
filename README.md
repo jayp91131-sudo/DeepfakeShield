@@ -158,8 +158,8 @@ Every component in this repository falls into one of the three honest engineerin
 ### 1. Clone & Create Virtual Environment
 
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
-cd deepfakeshield-paypal
+git clone https://github.com/jayp91131-sudo/DeepfakeShield.git
+cd DeepfakeShield
 python -m venv .venv
 ```
 
@@ -195,7 +195,7 @@ Key settings in `.env`:
    - `PGHOST`, `PGPORT` (default `5432`, or `5433` if running a secondary local cluster), `PGDATABASE=deepfakeshield_db`, `PGUSER=postgres`, `PGPASSWORD`.
    - `APP_PASSWORD`, `VERIFIER_PASSWORD`, `WORKER_PASSWORD`, `AUDITOR_PASSWORD` — must match the `ALTER ROLE ... WITH PASSWORD ...` credentials provisioned in PostgreSQL.
 3. **Cryptographic Signing Keys (`STRICT_CRYPTO_ENFORCEMENT=true`):**
-   - Generate independent 32-byte hex keys (`64` hex characters) for `ATTESTATION_SECRET`, `BLIND_INDEX_KEY`, and `AUTH_ASSERTION_KEY`, e.g.:
+   - Generate independent, high-entropy 32-byte hex keys (`64` hex characters) for `ATTESTATION_SECRET`, `BLIND_INDEX_KEY`, and `AUTH_ASSERTION_KEY` (all-zero, short, malformed, and repeated-byte keys are rejected at import/startup):
      ```bash
      python -c "import secrets; print(secrets.token_hex(32))"
      ```
@@ -230,11 +230,11 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
 
 ### Fresh Initialization (Starting at V10.1.3 -> V10.1.5)
 
-1. Create a clean PostgreSQL database (`deepfakeshield_db`) and initialize V10.1.3 + runtime role passwords using `setup_disposable_db.py` (uses environment variables or local test defaults — run only on non-production/disposable DBs):
+1. To initialize a **disposable test database** (never `deepfakeshield_db`), set explicit `PGPASSWORD`, `APP_PASSWORD`, `VERIFIER_PASSWORD`, `WORKER_PASSWORD`, `AUDITOR_PASSWORD`, and `DISPOSABLE_PGDATABASE` (must contain `test` or `disposable`), then pass `--confirm-drop`:
    ```bash
-   python setup_disposable_db.py
+   DISPOSABLE_PGDATABASE=deepfakeshield_disposable_test python setup_disposable_db.py --confirm-drop
    ```
-   *(Or apply `migrations/V10_1_3__security_repair.sql` manually via `psql` and run `ALTER ROLE` for `deepfakeshield_app`, `deepfakeshield_verifier`, `deepfakeshield_payout_worker`, and `deepfakeshield_auditor`.)*
+   *(For normal/production initialization of `deepfakeshield_db`, create the database and apply `migrations/V10_1_3__security_repair.sql` manually via `psql`, then run `ALTER ROLE` for `deepfakeshield_app`, `deepfakeshield_verifier`, `deepfakeshield_payout_worker`, and `deepfakeshield_auditor`.)*
 
 2. Apply `V10.1.4` (database-level fail-closed audio finalization gate):
    ```bash

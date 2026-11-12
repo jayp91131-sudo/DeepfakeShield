@@ -22,10 +22,18 @@ from psycopg.rows import dict_row
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 
+import setup_disposable_db
 from backend.database import get_admin_conn, get_app_conn, get_verifier_conn, get_worker_conn
+from backend import main as main_mod
 from backend.main import (
-    app, hash_password, verify_password, USER_PASSWORD_HASHES,
-    reset_auth_sessions, AUTH_SESSIONS
+    AUTH_SESSIONS,
+    OPERATOR_CATALOG,
+    _resolve_operator_credential,
+    _verify_operator_credential,
+    app,
+    hash_password,
+    reset_auth_sessions,
+    verify_password,
 )
 from backend.audio_analyzer import (
     compute_acoustic_spectral_fingerprint, analyze_audio_instruction,
@@ -37,12 +45,34 @@ from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
+def _require_disposable_db_target() -> str:
+    """
+    Enforces that destructive test cleanup runs ONLY against an explicitly configured
+    disposable test database validated through setup_disposable_db.get_env_config().
+    """
+    cfg = setup_disposable_db.get_env_config(confirm_drop=False)
+    db_name = str(cfg["database"])
+    if db_name.lower().startswith("template"):
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Refusing to target template database '{db_name}'."
+        )
+    return db_name
+
+
 @pytest.fixture(autouse=True)
-def clean_test_environment():
+def clean_test_environment(monkeypatch):
     reset_auth_sessions()
     reset_audio_hash_registry()
+    disposable_db = _require_disposable_db_target()
+    monkeypatch.setenv("PGDATABASE", disposable_db)
     with get_admin_conn(autocommit=True) as conn:
         with conn.cursor() as cur:
+            cur.execute("SELECT current_database();")
+            actual_db = cur.fetchone()[0]
+            if actual_db != disposable_db or actual_db.lower() in {"deepfakeshield_db", "postgres", "template0", "template1"}:
+                raise RuntimeError(
+                    f"CRITICAL SECURITY ERROR: Refusing cleanup on unexpected database '{actual_db}'."
+                )
             cur.execute("ALTER TABLE beneficiaries DISABLE TRIGGER ALL;")
             cur.execute("ALTER TABLE payout_snapshots DISABLE TRIGGER ALL;")
             cur.execute("ALTER TABLE payout_batches DISABLE TRIGGER ALL;")
@@ -95,38 +125,63 @@ def test_static_html_contains_zero_embedded_secrets_or_passwords():
     assert "handleModalLogin" in content, "handleModalLogin form handler must be present"
 
 
-def test_server_passwords_stored_as_scrypt_hashes():
-    """Verifies that the backend stores passwords using RFC 7914 scrypt hashes, not plaintext."""
-    assert len(USER_PASSWORD_HASHES) >= 5
-    for user, h in USER_PASSWORD_HASHES.items():
-        assert h.startswith("scrypt:16384:8:1$"), f"Password for {user} is not stored as an scrypt hash"
-        parts = h.split('$')
-        assert len(parts) == 3
-        # salt length 16 bytes = 32 hex chars
-        assert len(parts[1]) == 32
-        # derived key 64 bytes = 128 hex chars
-        assert len(parts[2]) == 128
+def test_server_passwords_stored_as_scrypt_hashes(monkeypatch):
+    """Verifies configuration-based operator credential resolution, zero hardcoded hashes, and RFC 7914 scrypt verification."""
+    assert not hasattr(main_mod, "USER_PASSWORD_HASHES"), "Legacy hardcoded USER_PASSWORD_HASHES must not exist"
+    assert len(OPERATOR_CATALOG) >= 5
+    for uname, meta in OPERATOR_CATALOG.items():
+        assert "password" not in meta and "password_hash" not in meta and "token" not in meta, (
+            f"Non-secret catalog entry for {uname} must not store credentials"
+        )
 
-    # Constant-time verification function tests
+    # Normal mode without explicit env config fails closed
+    monkeypatch.setenv("DEMO_MODE", "false")
+    monkeypatch.delenv("OPERATOR_CREDENTIALS", raising=False)
+    for meta in OPERATOR_CATALOG.values():
+        prefix = meta["env_prefix"]
+        monkeypatch.delenv(f"{prefix}_PASSWORD_HASH", raising=False)
+        monkeypatch.delenv(f"{prefix}_PASSWORD", raising=False)
+    for uname in OPERATOR_CATALOG:
+        assert _resolve_operator_credential(uname) is None
+        assert _verify_operator_credential(uname, "bob_yubikey_officer_pass_2026") is False
+
+    # Constant-time scrypt hashing and env-configured hash verification
     salt = os.urandom(16)
     stored = hash_password("test_secret_pass_123", salt=salt)
+    assert stored.startswith("scrypt:16384:8:1$")
+    parts = stored.split("$")
+    assert len(parts) == 3
+    assert len(parts[1]) == 32  # 16-byte hex salt
+    assert len(parts[2]) == 128  # 64-byte derived key
     assert verify_password("test_secret_pass_123", stored) is True
     assert verify_password("wrong_password_attempt", stored) is False
     assert verify_password("", stored) is False
 
+    monkeypatch.setenv("BOB_PASSWORD_HASH", stored)
+    assert _resolve_operator_credential("bob_checker") == stored
+    assert _verify_operator_credential("bob_checker", "test_secret_pass_123") is True
+    assert _verify_operator_credential("bob_checker", "wrong_password_attempt") is False
 
-def test_login_api_requires_secret_and_verifies_scrypt_hash():
-    """Adversarial test: login requires password and validates against scrypt hashes."""
+
+def test_login_api_requires_secret_and_verifies_scrypt_hash(monkeypatch):
+    """Adversarial test: login requires explicit env-configured scrypt hash outside DEMO_MODE."""
+    monkeypatch.setenv("DEMO_MODE", "false")
+    monkeypatch.delenv("OPERATOR_CREDENTIALS", raising=False)
+    monkeypatch.delenv("BOB_PASSWORD", raising=False)
+    monkeypatch.setenv("BOB_PASSWORD_HASH", hash_password("explicit_bob_test_pass_2026"))
+
     # 1. Missing password
     r1 = client.post("/api/auth/login", json={"username": "bob_checker"})
     assert r1.status_code == 401
 
-    # 2. Wrong password
+    # 2. Wrong password (including legacy demo password)
     r2 = client.post("/api/auth/login", json={"username": "bob_checker", "password": "wrong_password"})
     assert r2.status_code == 401
+    r2_legacy = client.post("/api/auth/login", json={"username": "bob_checker", "password": "bob_yubikey_officer_pass_2026"})
+    assert r2_legacy.status_code == 401
 
-    # 3. Valid password
-    r3 = client.post("/api/auth/login", json={"username": "bob_checker", "password": "bob_yubikey_officer_pass_2026"})
+    # 3. Valid explicitly configured password
+    r3 = client.post("/api/auth/login", json={"username": "bob_checker", "password": "explicit_bob_test_pass_2026"})
     assert r3.status_code == 200
     token = r3.json()["access_token"]
     assert token.startswith("sess-")

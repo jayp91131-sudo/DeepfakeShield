@@ -1017,7 +1017,7 @@ def test_task3_concurrency_activation_vs_finalization(admin_conn):
     key_id = 'a0000000-0000-0000-0000-000000000001'
 
     dek = os.urandom(32)
-    blind_key = crypto_verifier.DEFAULT_BLIND_INDEX_KEY
+    blind_key = crypto_verifier.get_blind_index_key()
     blind_idx = crypto_verifier.compute_recipient_blind_index("alice@contractor.com", blind_key)
     dest_dig = hashlib.sha256(b"alice@contractor.com").hexdigest()
 
@@ -1583,7 +1583,7 @@ def test_task4_ds_envelope_v1_identical_bytes_and_utf8_length(admin_conn):
         algorithm=algo
     )
 
-    py_hmac = hmac.new(crypto_verifier.DEFAULT_ATTESTATION_SECRET, py_envelope_bytes, hashlib.sha256).digest()
+    py_hmac = hmac.new(crypto_verifier.get_attestation_secret(), py_envelope_bytes, hashlib.sha256).digest()
 
     # PostgreSQL calculation
     with admin_conn.cursor() as cur:
@@ -1593,7 +1593,7 @@ def test_task4_ds_envelope_v1_identical_bytes_and_utf8_length(admin_conn):
             WHERE s.key_id = %s;
         """, (key_id,))
         db_attest_key = bytes(cur.fetchone()[0])
-        assert db_attest_key == crypto_verifier.DEFAULT_ATTESTATION_SECRET
+        assert db_attest_key == crypto_verifier.get_attestation_secret()
 
         # Compute binding string in PostgreSQL using exact octet_length logic
         cur.execute("""
@@ -1834,7 +1834,7 @@ def test_task1_multibatch_activation_vs_sweeper_deterministic_composite_order(ad
     chal_id = str(uuid.uuid4())
     key_id = "a0000000-0000-0000-0000-000000000001"
 
-    blind_key = crypto_verifier.DEFAULT_BLIND_INDEX_KEY
+    blind_key = crypto_verifier.get_blind_index_key()
     blind_idx = crypto_verifier.compute_recipient_blind_index("bob@contractor.com", blind_key)
     dest_dig = hashlib.sha256(b"bob@contractor.com").hexdigest()
     new_blind_idx = crypto_verifier.compute_recipient_blind_index("bob_new@contractor.com", blind_key)
@@ -2001,7 +2001,7 @@ def test_task1_multibatch_activation_vs_outbox_claim(admin_conn):
     chal_id = str(uuid.uuid4())
     key_id = "a0000000-0000-0000-0000-000000000001"
 
-    blind_key = crypto_verifier.DEFAULT_BLIND_INDEX_KEY
+    blind_key = crypto_verifier.get_blind_index_key()
     blind_idx = crypto_verifier.compute_recipient_blind_index("carol@contractor.com", blind_key)
     dest_dig = hashlib.sha256(b"carol@contractor.com").hexdigest()
     new_blind_idx = crypto_verifier.compute_recipient_blind_index("carol_new@contractor.com", blind_key)

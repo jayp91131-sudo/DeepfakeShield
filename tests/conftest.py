@@ -11,8 +11,26 @@ Guarantees:
 4. Process-wide PayPal OAuth token cache and simulator registry are cleared per test.
 """
 
+import os
+import sys
 import pytest
 import requests
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+from tests.test_fixtures import (
+    TEST_ATTESTATION_SECRET_HEX,
+    TEST_AUTH_ASSERTION_KEY_HEX,
+    TEST_BLIND_INDEX_KEY_HEX,
+)
+
+# Inject test-only cryptographic keys before importing application modules in pytest
+os.environ.setdefault("ATTESTATION_SECRET", TEST_ATTESTATION_SECRET_HEX)
+os.environ.setdefault("BLIND_INDEX_KEY", TEST_BLIND_INDEX_KEY_HEX)
+os.environ.setdefault("AUTH_ASSERTION_KEY", TEST_AUTH_ASSERTION_KEY_HEX)
+
 from backend.paypal_client import clear_paypal_token_cache, reset_paypal_simulator
 
 

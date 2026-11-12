@@ -21,9 +21,7 @@ if REPO_ROOT not in sys.path:
 from backend.database import (
     AUDITOR_PASS,
     BOB_CRED_ID,
-    BOB_DETERMINISTIC_SEED,
     CAROL_CRED_ID,
-    CAROL_DETERMINISTIC_SEED,
     DB_ADMIN_PASSWORD,
     DB_ADMIN_USER,
     DB_HOST,
@@ -50,12 +48,16 @@ from backend.payout_service import (
     submit_manual_audio_review,
 )
 from crypto_verifier import (
-    DEFAULT_AUTH_ASSERTION_KEY,
-    DEFAULT_BLIND_INDEX_KEY,
-    DEFAULT_ATTESTATION_SECRET,
     compute_recipient_blind_index,
     create_webauthn_assertion,
     encrypt_payload,
+)
+from tests.test_fixtures import (
+    TEST_ATTESTATION_SECRET,
+    TEST_AUTH_ASSERTION_KEY,
+    TEST_BLIND_INDEX_KEY,
+    TEST_BOB_DETERMINISTIC_SEED,
+    TEST_CAROL_DETERMINISTIC_SEED,
 )
 
 BENEFICIARY_ID = "30000000-0000-0000-0000-000000000001"
@@ -181,16 +183,16 @@ def disposable_v1015_db():
                     INSERT INTO internal_security_keys (key_id, secret_attestation_key, blind_index_key, auth_assertion_key)
                     VALUES (
                         '{KEY_ID_ACTIVE}',
-                        decode('{DEFAULT_ATTESTATION_SECRET.hex()}', 'hex'),
-                        decode('{DEFAULT_BLIND_INDEX_KEY.hex()}', 'hex'),
-                        decode('{DEFAULT_AUTH_ASSERTION_KEY.hex()}', 'hex')
+                        decode('{TEST_ATTESTATION_SECRET.hex()}', 'hex'),
+                        decode('{TEST_BLIND_INDEX_KEY.hex()}', 'hex'),
+                        decode('{TEST_AUTH_ASSERTION_KEY.hex()}', 'hex')
                     );
                     INSERT INTO audit_chain_heads (chain_id, head_event_digest, total_events, genesis_timestamp, last_event_at)
                     VALUES ('main', repeat('0', 64), 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
                     """
                 )
-                bob_priv = ec.derive_private_key(BOB_DETERMINISTIC_SEED, ec.SECP256R1())
-                carol_priv = ec.derive_private_key(CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
+                bob_priv = ec.derive_private_key(TEST_BOB_DETERMINISTIC_SEED, ec.SECP256R1())
+                carol_priv = ec.derive_private_key(TEST_CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
                 bob_cose = bob_priv.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
                 carol_cose = carol_priv.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
                 cur.execute(
@@ -204,7 +206,7 @@ def disposable_v1015_db():
                 )
 
                 sample_dek = bytes.fromhex("11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff")
-                blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, DEFAULT_BLIND_INDEX_KEY)
+                blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, TEST_BLIND_INDEX_KEY)
                 dest_digest = hashlib.sha256(BENEFICIARY_EMAIL.encode("utf-8")).hexdigest()
                 nonce, ct, tag = encrypt_payload(sample_dek, BENEFICIARY_EMAIL.encode("utf-8"), b"BENEFICIARY_REGISTRY")
                 cur.execute(
@@ -868,8 +870,8 @@ def test_05_valid_approve_with_review_finalization_and_dual_treasury_approvals(d
             assert cur.fetchone() == ("CHALLENGE", "NEEDS_REVIEW")
 
     # 6. Dual independent Treasury Officer WebAuthn approvals (Bob + Carol)
-    bob_priv = ec.derive_private_key(BOB_DETERMINISTIC_SEED, ec.SECP256R1())
-    carol_priv = ec.derive_private_key(CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
+    bob_priv = ec.derive_private_key(TEST_BOB_DETERMINISTIC_SEED, ec.SECP256R1())
+    carol_priv = ec.derive_private_key(TEST_CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
 
     for stage_idx, (headers_off, cred_id, priv_key) in enumerate(
         ((h_bob, BOB_CRED_ID, bob_priv), (h_carol, CAROL_CRED_ID, carol_priv)), start=1

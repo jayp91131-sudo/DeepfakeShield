@@ -66,7 +66,7 @@ from backend.payout_service import (
     submit_manual_audio_review,
 )
 from backend.outbox_worker import OutboxWorker
-from crypto_verifier import create_webauthn_assertion
+from crypto_verifier import create_webauthn_assertion, validate_crypto_environment
 
 app = FastAPI(title="DeepfakeShield for PayPal", version="10.1.3")
 
@@ -75,7 +75,7 @@ def validate_runtime_security_configuration() -> None:
     Validates startup security invariants:
     1. Blocks DEMO_MODE=true when paired with PayPal production endpoints.
     2. Enforces STRICT_CRYPTO_ENFORCEMENT=true by default (cannot disable outside DEMO_MODE=true).
-    3. Requires explicit database, authentication, and signing credentials outside DEMO_MODE=true.
+    3. Requires valid, explicit 256-bit cryptographic keys, database credentials, and operator auth outside DEMO_MODE=true.
     """
     validate_demo_mode_paypal_safety()
     demo_enabled = is_demo_mode()
@@ -87,12 +87,7 @@ def validate_runtime_security_configuration() -> None:
                 "CRITICAL SECURITY ERROR: STRICT_CRYPTO_ENFORCEMENT cannot be disabled outside DEMO_MODE=true."
             )
     else:
-        for crypto_var in ("ATTESTATION_SECRET", "BLIND_INDEX_KEY", "AUTH_ASSERTION_KEY"):
-            if _is_placeholder_value(os.environ.get(crypto_var)):
-                raise RuntimeError(
-                    f"CRITICAL SECURITY ERROR: Required cryptographic key '{crypto_var}' is missing or placeholder "
-                    "while STRICT_CRYPTO_ENFORCEMENT is enabled."
-                )
+        validate_crypto_environment()
 
     if demo_enabled:
         return
@@ -182,7 +177,20 @@ _DEMO_OPERATOR_PASSWORDS: Dict[str, str] = {
     "eve_unauthorized": "eve_unauthorized_clerk_pass_2026",
 }
 
+def get_demo_operator_password(username: str) -> Optional[str]:
+    """Returns demo-only fallback password exclusively when DEMO_MODE=true."""
+    if not is_demo_mode():
+        raise RuntimeError(
+            "CRITICAL SECURITY ERROR: Demo operator passwords cannot be accessed outside DEMO_MODE=true."
+        )
+    validate_demo_mode_paypal_safety()
+    return _DEMO_OPERATOR_PASSWORDS.get(username)
+
 def _build_demo_sessions() -> Dict[str, Dict[str, Any]]:
+    if not is_demo_mode():
+        raise RuntimeError(
+            "CRITICAL SECURITY ERROR: Static demo bearer tokens cannot be built outside DEMO_MODE=true."
+        )
     validate_demo_mode_paypal_safety()
     sessions: Dict[str, Dict[str, Any]] = {}
     for uname, tok in _DEMO_TOKEN_BY_USERNAME.items():
@@ -264,8 +272,7 @@ def _resolve_operator_credential(username: str) -> Optional[str]:
         return env_pass.strip()
 
     if is_demo_mode():
-        validate_demo_mode_paypal_safety()
-        return _DEMO_OPERATOR_PASSWORDS.get(username)
+        return get_demo_operator_password(username)
 
     return None
 

@@ -23,12 +23,11 @@ from psycopg.rows import dict_row
 from backend.database import (
     get_worker_conn,
     KEY_ID_ACTIVE,
-    DEFAULT_ATTESTATION_SECRET
 )
 from backend.paypal_client import PayPalClient
 from crypto_verifier import (
     verify_envelope_before_submission,
-    DEFAULT_ATTESTATION_SECRET
+    get_attestation_secret,
 )
 
 class OutboxWorker:
@@ -124,7 +123,7 @@ class OutboxWorker:
                     key_version=1,
                     wrapped_dek=dek_bytes,
                     attestation=bytes(details["cryptographic_attestation"]),
-                    attestation_secret=DEFAULT_ATTESTATION_SECRET
+                    attestation_secret=get_attestation_secret()
                 )
                 if not is_valid_envelope:
                     raise ValueError("Cryptographic attestation verification failed prior to submission!")

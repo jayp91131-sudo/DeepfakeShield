@@ -24,9 +24,7 @@ from backend.database import (
     APP_PASS,
     AUDITOR_PASS,
     BOB_CRED_ID,
-    BOB_DETERMINISTIC_SEED,
     CAROL_CRED_ID,
-    CAROL_DETERMINISTIC_SEED,
     DB_ADMIN_PASSWORD,
     DB_ADMIN_USER,
     DB_HOST,
@@ -39,13 +37,17 @@ from backend.database import (
     VERIFIER_PASS,
 )
 from crypto_verifier import (
-    DEFAULT_ATTESTATION_SECRET,
-    DEFAULT_AUTH_ASSERTION_KEY,
-    DEFAULT_BLIND_INDEX_KEY,
     compute_recipient_blind_index,
     create_webauthn_assertion,
     encrypt_payload,
     verify_and_attest_snapshot,
+)
+from tests.test_fixtures import (
+    TEST_ATTESTATION_SECRET,
+    TEST_AUTH_ASSERTION_KEY,
+    TEST_BLIND_INDEX_KEY,
+    TEST_BOB_DETERMINISTIC_SEED,
+    TEST_CAROL_DETERMINISTIC_SEED,
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,17 +93,17 @@ def disposable_db():
                     INSERT INTO internal_security_keys (key_id, secret_attestation_key, blind_index_key, auth_assertion_key)
                     VALUES (
                         '{KEY_ID_ACTIVE}',
-                        decode('{DEFAULT_ATTESTATION_SECRET.hex()}', 'hex'),
-                        decode('{DEFAULT_BLIND_INDEX_KEY.hex()}', 'hex'),
-                        decode('{DEFAULT_AUTH_ASSERTION_KEY.hex()}', 'hex')
+                        decode('{TEST_ATTESTATION_SECRET.hex()}', 'hex'),
+                        decode('{TEST_BLIND_INDEX_KEY.hex()}', 'hex'),
+                        decode('{TEST_AUTH_ASSERTION_KEY.hex()}', 'hex')
                     );
                     INSERT INTO audit_chain_heads (chain_id, head_event_digest, total_events, genesis_timestamp, last_event_at)
                     VALUES ('main', repeat('0', 64), 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
                     """
                 )
 
-                bob_priv = ec.derive_private_key(BOB_DETERMINISTIC_SEED, ec.SECP256R1())
-                carol_priv = ec.derive_private_key(CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
+                bob_priv = ec.derive_private_key(TEST_BOB_DETERMINISTIC_SEED, ec.SECP256R1())
+                carol_priv = ec.derive_private_key(TEST_CAROL_DETERMINISTIC_SEED, ec.SECP256R1())
                 bob_cose = bob_priv.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
                 carol_cose = carol_priv.public_key().public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
                 cur.execute(
@@ -115,7 +117,7 @@ def disposable_db():
                 )
 
                 sample_dek = bytes.fromhex("11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff")
-                blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, DEFAULT_BLIND_INDEX_KEY)
+                blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, TEST_BLIND_INDEX_KEY)
                 dest_digest = hashlib.sha256(BENEFICIARY_EMAIL.encode("utf-8")).hexdigest()
                 nonce, ct, tag = encrypt_payload(sample_dek, BENEFICIARY_EMAIL.encode("utf-8"), b"BENEFICIARY_REGISTRY")
                 cur.execute(
@@ -195,7 +197,7 @@ def _create_draft_batch_sql(db_name: str, session_id: str | None = None) -> tupl
                 ),
             )
 
-            blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, DEFAULT_BLIND_INDEX_KEY)
+            blind_idx = compute_recipient_blind_index(BENEFICIARY_EMAIL, TEST_BLIND_INDEX_KEY)
             dest_digest = hashlib.sha256(BENEFICIARY_EMAIL.encode("utf-8")).hexdigest()
             i_dek = os.urandom(32)
             inonce, ict, itag = encrypt_payload(i_dek, BENEFICIARY_EMAIL.encode("utf-8"), b"PAYOUT_ITEM_RECEIVER")
@@ -312,7 +314,7 @@ def _call_finalize_sql(db_name: str, batch_id: str, sender_batch_id: str, sender
         batch_id=uuid.UUID(batch_id),
         snapshot_id=snapshot_id,
         key_id=uuid.UUID(KEY_ID_ACTIVE),
-        attestation_secret=DEFAULT_ATTESTATION_SECRET,
+        attestation_secret=TEST_ATTESTATION_SECRET,
         wrapped_dek=dek,
     ).attestation
 

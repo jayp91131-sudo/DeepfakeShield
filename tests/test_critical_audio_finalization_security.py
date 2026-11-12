@@ -18,13 +18,13 @@ from fastapi.testclient import TestClient
 from psycopg.rows import dict_row
 
 from backend.database import (
-    DEFAULT_ATTESTATION_SECRET,
     KEY_ID_ACTIVE,
     USER_ALICE_MAKER,
     get_admin_conn,
     get_app_conn,
     get_auditor_conn,
 )
+from tests.test_fixtures import TEST_ATTESTATION_SECRET
 from backend.main import AUTH_SESSIONS, app, reset_auth_sessions
 from backend.payout_service import (
     AudioRiskGateError,
@@ -390,7 +390,7 @@ def test_04_direct_db_finalize_cannot_bypass_audio_policy():
                         batch_id=uuid.UUID(batch_id),
                         snapshot_id=snapshot_id,
                         key_id=uuid.UUID(KEY_ID_ACTIVE),
-                        attestation_secret=DEFAULT_ATTESTATION_SECRET,
+                        attestation_secret=TEST_ATTESTATION_SECRET,
                         wrapped_dek=dek,
                     ).attestation
 

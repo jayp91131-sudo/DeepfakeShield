@@ -38,9 +38,11 @@ from crypto_verifier import (
     generate_webauthn_keypair,
     create_webauthn_assertion,
     verify_webauthn_assertion,
-    DEFAULT_ATTESTATION_SECRET,
-    DEFAULT_BLIND_INDEX_KEY,
-    DEFAULT_AUTH_ASSERTION_KEY
+)
+from tests.test_fixtures import (
+    TEST_ATTESTATION_SECRET,
+    TEST_AUTH_ASSERTION_KEY,
+    TEST_BLIND_INDEX_KEY,
 )
 
 # Environment-Provided Configuration with Safe Defaults
@@ -253,7 +255,7 @@ def test_mandatory_cryptographic_attestation_and_isolation(admin_conn, app_conn)
     key_id = 'a0000000-0000-0000-0000-000000000001'
 
     clean_email = "contractor.legit@example.com"
-    blind_idx = compute_recipient_blind_index(clean_email, DEFAULT_BLIND_INDEX_KEY)
+    blind_idx = compute_recipient_blind_index(clean_email, TEST_BLIND_INDEX_KEY)
     expected_digest = hashlib.sha256(clean_email.encode('utf-8')).hexdigest()
 
     with admin_conn.cursor() as cur:
@@ -327,7 +329,7 @@ def test_mandatory_cryptographic_attestation_and_isolation(admin_conn, app_conn)
     })
     nonce_bad, cipher_bad, tag_bad = encrypt_payload(dek, hacker_payload_json.encode('utf-8'), aad)
     with pytest.raises(ValueError) as exc_v:
-        verify_and_attest_snapshot(dek, nonce_bad, cipher_bad, tag_bad, aad, valid_payload_json, DEFAULT_ATTESTATION_SECRET)
+        verify_and_attest_snapshot(dek, nonce_bad, cipher_bad, tag_bad, aad, valid_payload_json, TEST_ATTESTATION_SECRET)
     assert "Exact Payload Integrity Failure" in str(exc_v.value)
 
 # ============================================================================
@@ -349,7 +351,7 @@ def test_recipient_blind_index_verification_and_redaction(admin_conn, app_conn):
 
     secret_email = "sensitive.whistleblower@corp.internal"
     raw_sha256 = hashlib.sha256(secret_email.encode('utf-8')).hexdigest()
-    correct_blind_index = compute_recipient_blind_index(secret_email, DEFAULT_BLIND_INDEX_KEY)
+    correct_blind_index = compute_recipient_blind_index(secret_email, TEST_BLIND_INDEX_KEY)
 
     with admin_conn.cursor() as cur:
         cur.execute(f"INSERT INTO sessions (id, created_by_user_id) VALUES ('{session_id}', '10000000-0000-0000-0000-000000000001');")
@@ -389,7 +391,7 @@ def test_recipient_blind_index_verification_and_redaction(admin_conn, app_conn):
     aad = aad_text.encode('utf-8')
     nonce, cipher, tag = encrypt_payload(dek, payload_json.encode('utf-8'), aad)
     attestation, p_digest, c_digest = verify_and_attest_snapshot(
-        dek, nonce, cipher, tag, aad, payload_json, batch_id, DEFAULT_ATTESTATION_SECRET
+        dek, nonce, cipher, tag, aad, payload_json, batch_id, TEST_ATTESTATION_SECRET
     )
 
     # Corrupt beneficiaries table with unkeyed raw SHA256
@@ -480,7 +482,7 @@ def test_authenticated_identity_assertion_required(admin_conn, verifier_conn):
 
     # 3. Assertion for AP Clerk (Alice) fails role check
     alice_assertion = create_identity_assertion(
-        uuid.UUID(alice_ap), uuid.UUID(batch_id), "SETTLED", DEFAULT_AUTH_ASSERTION_KEY
+        uuid.UUID(alice_ap), uuid.UUID(batch_id), "SETTLED", TEST_AUTH_ASSERTION_KEY
     )
     with verifier_conn.cursor() as cur:
         with pytest.raises(psycopg.errors.InsufficientPrivilege) as exc3:
@@ -493,7 +495,7 @@ def test_authenticated_identity_assertion_required(admin_conn, verifier_conn):
 
     # 4. Valid assertion for Treasury Officer Bob succeeds
     valid_bob_assertion = create_identity_assertion(
-        uuid.UUID(bob_officer), uuid.UUID(batch_id), "SETTLED", DEFAULT_AUTH_ASSERTION_KEY
+        uuid.UUID(bob_officer), uuid.UUID(batch_id), "SETTLED", TEST_AUTH_ASSERTION_KEY
     )
     with verifier_conn.cursor() as cur:
         cur.execute("""
@@ -591,7 +593,7 @@ def test_provider_failure_evidence_and_duplicate_handling(admin_conn, worker_con
 
     # 2. Manual resolution to FAILED with short notes (< 20 chars) is rejected
     assertion_failed = create_identity_assertion(
-        uuid.UUID(bob_officer), uuid.UUID(batch_id), "FAILED", DEFAULT_AUTH_ASSERTION_KEY
+        uuid.UUID(bob_officer), uuid.UUID(batch_id), "FAILED", TEST_AUTH_ASSERTION_KEY
     )
     with verifier_conn.cursor() as cur:
         with pytest.raises(psycopg.errors.CheckViolation) as exc_notes:

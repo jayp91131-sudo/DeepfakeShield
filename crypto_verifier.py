@@ -17,48 +17,113 @@ import hashlib
 import json
 import base64
 import uuid
+from typing import Optional, Tuple
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_der_public_key
 from cryptography.exceptions import InvalidSignature, InvalidTag
 
-# Dedicated Cryptographic Keys (in production, loaded from secure KMS / Vault)
-# Fail closed if secure key material is required but missing
-_ENV_ATTESTATION = os.environ.get("ATTESTATION_SECRET")
-_ENV_BLIND = os.environ.get("BLIND_INDEX_KEY")
-_ENV_ASSERTION = os.environ.get("AUTH_ASSERTION_KEY")
 
-if os.environ.get("STRICT_CRYPTO_ENFORCEMENT", "false").lower() == "true":
-    if not _ENV_ATTESTATION or not _ENV_BLIND or not _ENV_ASSERTION:
-        raise RuntimeError("CRITICAL SECURITY ERROR: Required cryptographic keys missing in environment with STRICT_CRYPTO_ENFORCEMENT=true")
+def is_strict_crypto_enabled() -> bool:
+    """STRICT_CRYPTO_ENFORCEMENT defaults to True; must fail closed unless explicitly disabled."""
+    return os.environ.get("STRICT_CRYPTO_ENFORCEMENT", "true").strip().lower() != "false"
 
-DEFAULT_ATTESTATION_SECRET = bytes.fromhex(_ENV_ATTESTATION) if _ENV_ATTESTATION else bytes.fromhex("c0ffee00deadbeef0102030405060708090a0b0c0d0e0f101112131415161718")
-DEFAULT_BLIND_INDEX_KEY = bytes.fromhex(_ENV_BLIND) if _ENV_BLIND else bytes.fromhex("ba5eba11deadbeef2122232425262728292a2b2c2d2e2f303132333435363738")
-DEFAULT_AUTH_ASSERTION_KEY = bytes.fromhex(_ENV_ASSERTION) if _ENV_ASSERTION else bytes.fromhex("cafebebe01020304a1a2a3a4b1b2b3b4c1c2c3c4d1d2d3d4e1e2e3e4f1f2f3f4")
 
-def compute_recipient_blind_index(email: str, blind_index_key: bytes = DEFAULT_BLIND_INDEX_KEY) -> str:
+def _validate_crypto_key(env_name: str) -> bytes:
+    """
+    Validates an explicitly configured hex-encoded cryptographic secret (>= 256-bit, non-weak).
+    Never silently generates, substitutes, or falls back to a default key.
+    """
+    raw = os.environ.get(env_name)
+    if not raw or not raw.strip():
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Required cryptographic key '{env_name}' is missing from environment."
+        )
+    stripped = raw.strip()
+    if stripped.startswith("<") and stripped.endswith(">"):
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Cryptographic key '{env_name}' contains an unconfigured placeholder."
+        )
+    try:
+        key_bytes = bytes.fromhex(stripped)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Cryptographic key '{env_name}' is malformed (must be valid hex)."
+        ) from exc
+
+    if len(key_bytes) < 32:
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Cryptographic key '{env_name}' is too short ({len(key_bytes)} bytes; minimum 32 bytes required)."
+        )
+    if key_bytes == b"\x00" * len(key_bytes) or len(set(key_bytes)) < 8:
+        raise RuntimeError(
+            f"CRITICAL SECURITY ERROR: Cryptographic key '{env_name}' is weak (low entropy or repeated bytes)."
+        )
+    return key_bytes
+
+
+def get_attestation_secret() -> bytes:
+    """Returns the explicitly configured 32+ byte HMAC attestation secret."""
+    return _validate_crypto_key("ATTESTATION_SECRET")
+
+
+def get_blind_index_key() -> bytes:
+    """Returns the explicitly configured 32+ byte HMAC blind index key."""
+    return _validate_crypto_key("BLIND_INDEX_KEY")
+
+
+def get_auth_assertion_key() -> bytes:
+    """Returns the explicitly configured 32+ byte operator assertion key."""
+    return _validate_crypto_key("AUTH_ASSERTION_KEY")
+
+
+def validate_crypto_environment() -> Tuple[bytes, bytes, bytes]:
+    """Validates all required cryptographic secrets and returns (attestation, blind_index, auth_assertion)."""
+    return (
+        get_attestation_secret(),
+        get_blind_index_key(),
+        get_auth_assertion_key(),
+    )
+
+
+if is_strict_crypto_enabled():
+    validate_crypto_environment()
+
+
+def _require_explicit_key_bytes(key_bytes: Optional[bytes], fallback_getter, key_label: str) -> bytes:
+    resolved = key_bytes if key_bytes is not None else fallback_getter()
+    if not isinstance(resolved, (bytes, bytearray)) or len(resolved) < 32:
+        raise ValueError(f"Invalid {key_label}: must be at least 32 bytes.")
+    if bytes(resolved) == b"\x00" * len(resolved):
+        raise ValueError(f"Weak {key_label}: all-zero key material is rejected.")
+    return bytes(resolved)
+
+
+def compute_recipient_blind_index(email: str, blind_index_key: Optional[bytes] = None) -> str:
     """
     BLOCKER 3: Dedicated Keyed HMAC Blind Index.
     Normalizes the email address and computes keyed HMAC-SHA256.
     Never uses plain SHA-256, never uses aad_text as key, and never allows 'idx' or unkeyed fallback.
     """
+    key = _require_explicit_key_bytes(blind_index_key, get_blind_index_key, "blind_index_key")
     normalized = email.strip().lower()
-    return hmac.new(blind_index_key, normalized.encode('utf-8'), hashlib.sha256).hexdigest()
+    return hmac.new(key, normalized.encode('utf-8'), hashlib.sha256).hexdigest()
 
 def create_identity_assertion(
     operator_user_id: uuid.UUID,
     batch_id: uuid.UUID,
     final_state: str,
-    auth_assertion_key: bytes = DEFAULT_AUTH_ASSERTION_KEY
+    auth_assertion_key: Optional[bytes] = None
 ) -> bytes:
     """
     BLOCKER 4: Authenticated Identity Assertion.
     Binds the operator identity, batch ID, and final action into a cryptographic HMAC token.
     Verified inside fn_resolve_manual_reconciliation to eliminate trust in bare caller-controlled parameters.
     """
+    key = _require_explicit_key_bytes(auth_assertion_key, get_auth_assertion_key, "auth_assertion_key")
     msg = f"MANUAL_RECONCILIATION:{batch_id}:{operator_user_id}:{final_state}".encode('utf-8')
-    return hmac.new(auth_assertion_key, msg, hashlib.sha256).digest()
+    return hmac.new(key, msg, hashlib.sha256).digest()
 
 def encrypt_payload(dek: bytes, plaintext: bytes, aad: bytes):
     """Encrypts plaintext with AES-256-GCM."""
@@ -146,7 +211,7 @@ def verify_and_attest_snapshot(
     aad: bytes,
     expected_plaintext_json: str,
     batch_id: uuid.UUID | str = None,
-    attestation_secret: bytes = DEFAULT_ATTESTATION_SECRET,
+    attestation_secret: Optional[bytes] = None,
     snapshot_id: uuid.UUID | str = None,
     key_id: uuid.UUID | str = None,
     key_version: int = 1,
@@ -165,9 +230,11 @@ def verify_and_attest_snapshot(
        wrapped_dek_digest : plaintext_digest : ciphertext_digest : nonce : tag : aad_text
     """
     # Backward compatibility if 7th positional argument was attestation_secret
-    if isinstance(batch_id, (bytes, bytearray)) and len(batch_id) == 32 and attestation_secret == DEFAULT_ATTESTATION_SECRET:
+    if isinstance(batch_id, (bytes, bytearray)) and len(batch_id) == 32 and attestation_secret is None:
         attestation_secret = bytes(batch_id)
         batch_id = None
+
+    resolved_secret = _require_explicit_key_bytes(attestation_secret, get_attestation_secret, "attestation_secret")
 
     aesgcm = AESGCM(dek)
     # Will raise InvalidTag if ciphertext, tag, nonce, or aad was tampered
@@ -212,7 +279,7 @@ def verify_and_attest_snapshot(
         snapshot_id = uuid.uuid4()
         binding_msg = f"{batch_str}:{plaintext_digest}:{ciphertext_digest}:{nonce.hex()}:{tag.hex()}:{aad_str}".encode('utf-8')
 
-    attestation = hmac.new(attestation_secret, binding_msg, hashlib.sha256).digest()
+    attestation = hmac.new(resolved_secret, binding_msg, hashlib.sha256).digest()
 
     return AttestationResult(
         attestation,
@@ -237,7 +304,7 @@ def verify_envelope_before_submission(
     wrapped_dek: bytes,
     attestation: bytes,
     algorithm: str = "AES-256-GCM",
-    attestation_secret: bytes = DEFAULT_ATTESTATION_SECRET
+    attestation_secret: Optional[bytes] = None
 ) -> bool:
     """
     TASK 1: Verify the complete envelope again before payout submission.
@@ -246,6 +313,7 @@ def verify_envelope_before_submission(
     - AES-GCM ciphertext decryption and payload bit-for-bit equality
     - Digest match on plaintext, ciphertext, and wrapped DEK
     """
+    resolved_secret = _require_explicit_key_bytes(attestation_secret, get_attestation_secret, "attestation_secret")
     wrapped_dek_digest = hashlib.sha256(wrapped_dek).hexdigest()
     expected_bytes = expected_plaintext_json.encode('utf-8')
     plaintext_digest = hashlib.sha256(expected_bytes).hexdigest()
@@ -264,7 +332,7 @@ def verify_envelope_before_submission(
         wrapped_dek_digest=wrapped_dek_digest,
         algorithm=algorithm
     )
-    expected_attestation = hmac.new(attestation_secret, binding_msg, hashlib.sha256).digest()
+    expected_attestation = hmac.new(resolved_secret, binding_msg, hashlib.sha256).digest()
     if not hmac.compare_digest(attestation, expected_attestation):
         raise ValueError("Attestation signature mismatch: complete envelope authentication failed before submission")
 
