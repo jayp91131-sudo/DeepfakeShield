@@ -591,6 +591,8 @@ def _reset_db_for_worker_test():
 
 def test_outbox_worker_oauth_precheck_failure_fails_closed_not_manual_reconcile(monkeypatch):
     """DB-backed OutboxWorker test: pre-submission OAuth 401 never enters MANUAL_RECONCILIATION_REQUIRED and releases locks."""
+    import hashlib
+    import uuid
     from psycopg.rows import dict_row
     from backend.database import (
         get_admin_conn,
@@ -605,6 +607,7 @@ def test_outbox_worker_oauth_precheck_failure_fails_closed_not_manual_reconcile(
         create_draft_batch,
         finalize_batch,
         issue_officer_challenge,
+        record_audio_analysis_for_batch,
         record_officer_webauthn_approval,
     )
     from backend.outbox_worker import OutboxWorker
@@ -630,6 +633,7 @@ def test_outbox_worker_oauth_precheck_failure_fails_closed_not_manual_reconcile(
 
     monkeypatch.setattr("backend.paypal_client.requests.post", fake_post)
 
+    session_id = str(uuid.uuid4())
     batch_res = create_draft_batch(
         maker_user_id=USER_ALICE_MAKER,
         program_id="PROG_DEV_2026",
@@ -639,8 +643,30 @@ def test_outbox_worker_oauth_precheck_failure_fails_closed_not_manual_reconcile(
             "amount_usd": "325.00",
             "receiver_email": "contractor.acme@example.com",
         }],
+        session_id=session_id,
     )
     batch_id = batch_res["batch_id"]
+    record_audio_analysis_for_batch(
+        batch_id=batch_id,
+        audio_analysis_result={
+            "audio_sha256": hashlib.sha256(f"oauth-precheck-{batch_id}".encode("utf-8")).hexdigest(),
+            "acoustic_fingerprint": hashlib.sha256(f"fp-{batch_id}".encode("utf-8")).hexdigest(),
+            "duration_ms": 4038,
+            "sample_count": 64600,
+            "wada_snr_db": 26.0,
+            "model_version": "ACOUSTIC_FFT_HEURISTIC_V1",
+            "deepfake_probability": 0.12,
+            "acoustic_consistency_score": 0.88,
+            "voice_clone_flag": False,
+            "adversarial_noise_detected": False,
+            "replay_detected": False,
+            "recommendation": "APPROVE",
+            "policy_decision": "READY_FOR_CHECKER",
+            "consent_given": True,
+        },
+        session_id=session_id,
+        user_id=USER_ALICE_MAKER,
+    )
     finalize_batch(batch_id, audio_policy_decision="READY_FOR_CHECKER")
 
     for uid, cred_id in [(USER_BOB_CHECKER1, BOB_CRED_ID), (USER_CAROL_CHECKER2, CAROL_CRED_ID)]:

@@ -34,19 +34,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ----------------------------------------------------------------------------
--- 0. SCHEMA MIGRATIONS TABLE (BLOCKER 7)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS schema_migrations (
-    version VARCHAR(50) PRIMARY KEY,
-    description TEXT NOT NULL,
-    applied_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-ALTER TABLE schema_migrations OWNER TO deepfakeshield_owner;
-GRANT SELECT ON schema_migrations TO PUBLIC, deepfakeshield_app, deepfakeshield_verifier, deepfakeshield_payout_worker, deepfakeshield_auditor;
-
-
--- ----------------------------------------------------------------------------
--- 1. ROLES & LEAST-PRIVILEGE ACCESS CONFIGURATION
+-- 0. ROLES & LEAST-PRIVILEGE ACCESS CONFIGURATION
 -- ----------------------------------------------------------------------------
 DO $$
 BEGIN
@@ -66,6 +54,17 @@ BEGIN
         CREATE ROLE deepfakeshield_auditor WITH LOGIN;
     END IF;
 END $$;
+
+-- ----------------------------------------------------------------------------
+-- 1. SCHEMA MIGRATIONS TABLE (BLOCKER 7)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version VARCHAR(50) PRIMARY KEY,
+    description TEXT NOT NULL,
+    applied_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE schema_migrations OWNER TO deepfakeshield_owner;
+GRANT SELECT ON schema_migrations TO PUBLIC, deepfakeshield_app, deepfakeshield_verifier, deepfakeshield_payout_worker, deepfakeshield_auditor;
 
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE ALL ON SCHEMA public FROM deepfakeshield_app, deepfakeshield_verifier, deepfakeshield_payout_worker, deepfakeshield_auditor;

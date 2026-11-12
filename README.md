@@ -1,5 +1,7 @@
 # DeepfakeShield for PayPal (V10.1.5)
 
+[![DeepfakeShield CI](https://github.com/jayp91131-sudo/DeepfakeShield/actions/workflows/ci.yml/badge.svg)](https://github.com/jayp91131-sudo/DeepfakeShield/actions/workflows/ci.yml)
+
 **Voice-Authorized Disbursement Control & Fail-Closed Treasury Security Gate for PayPal Payouts**
 
 > **Status Disclosure:** DeepfakeShield is an engineering prototype and reference security architecture built for controlled sandbox evaluation. It is **not production-ready** and uses a deterministic heuristic audio analyzer (`ACOUSTIC_FFT_HEURISTIC_V1`) rather than a trained neural deepfake detector. See [Truthful Capability Disclosure](#truthful-capability-disclosure) below before deploying or evaluating.
@@ -275,11 +277,25 @@ All schema changes are SQL migrations under `migrations/`. Each forward migratio
    - **AP Maker (`alice_ap_maker`):** Create a draft payout batch, upload or capture a 16 kHz Mono PCM16 WAV voice sample (or record locally using `python record_fresh_voice.py` into gitignored `audio_samples/`), and attempt finalization.
    - **Risk Reviewer (`RISK_REVIEWER`):** If `ACOUSTIC_FFT_HEURISTIC_V1` returns `NEEDS_REVIEW`, authenticate as an explicitly provisioned `RISK_REVIEWER` account to inspect acoustic metrics, SHA-256/spectral fingerprints, and record `APPROVE_WITH_REVIEW` or `REJECT`.
    - **Treasury Officers (`bob_checker`, `carol_checker_two`):** Complete WebAuthn/P-256 dual-officer approvals on finalized batches and trigger `/api/outbox/process` in `SIMULATOR` or `SANDBOX_API` mode.
-5. **Run the Automated Test Suite (Disposable Database Required):**
+5. **Run the Automated V10.1.5 CI Test Suite (Disposable Database Required):**
    ```bash
-   pytest tests/test_release_security_startup.py tests/test_database_audio_gate_migration.py tests/test_v10_1_5_manual_audio_review.py tests/test_paypal_sandbox_api.py
+   pytest tests/test_release_security_startup.py tests/test_paypal_sandbox_api.py tests/test_database_audio_gate_migration.py tests/test_v10_1_5_manual_audio_review.py tests/test_final_acceptance.py tests/test_product_qa_and_ui.py::test_static_html_navigation_sections_and_honest_labeling -v
    ```
+   - **GitHub Actions CI (`.github/workflows/ci.yml`):** Automatically provisions an isolated PostgreSQL 18 service on every push/PR to `main`, generates ephemeral per-run credentials, initializes `deepfakeshield_test_ci` via `setup_disposable_db.py --confirm-drop`, applies `V10.1.4` and `V10.1.5` migrations, and runs all **55** V10.1.5 security, migration, PayPal simulator/mock, and API acceptance tests without touching `deepfakeshield_db` or real PayPal credentials (`191` total tests collected across the repository, including legacy pre-V10.1.4 suites, pre-build skip stubs, and live-server UI tests).
    > **Warning:** Several integration test modules recreate/seed database fixtures; always run `pytest` against a dedicated disposable database, never a persistent environment containing data you want to keep.
+
+### Controlled $1.00 USD PayPal Sandbox Demonstration Procedure
+
+> **Safety Gate:** Never submit an external PayPal payout automatically or with previously exposed secrets. Configure a newly rotated Sandbox Business App credential locally in `.env`, confirm OAuth connectivity (`SANDBOX_API_ONLINE`, HTTP `200`) first, and require explicit human authorization before triggering outbox submission.
+
+1. **Batch Creation:** Sign in as `alice_ap_maker`, select a verified Sandbox beneficiary, and create a draft batch for `$1.00 USD` (`POST /api/batches/create`).
+2. **Risk Evaluation:** Upload or record a 16 kHz Mono PCM16 WAV authorization sample (`POST /api/audio/analyze`) to persist SHA-256 + spectral fingerprint evidence via `deepfakeshield_verifier` (`fn_record_audio_risk_evaluation`).
+3. **Human Review (if `NEEDS_REVIEW`):** If `ACOUSTIC_FFT_HEURISTIC_V1` routes the capture to `NEEDS_REVIEW`, sign in as an explicitly provisioned `RISK_REVIEWER`, inspect the acoustic metrics, and record an append-only `APPROVE_WITH_REVIEW` disposition (`POST /api/batches/{id}/audio/manual-review`).
+4. **Finalization:** Finalize the draft batch (`POST /api/batches/{id}/finalize`), enforcing the database audio risk gate (`fn_finalize_payout_batch`), encrypting beneficiary payloads (AES-256-GCM), and creating an HMAC-attested immutable `payout_snapshots` record.
+5. **Two Independent Approvals:** Authenticate independently as `bob_checker` and `carol_checker_two`, request server-issued WebAuthn challenges (`POST /api/batches/{id}/webauthn/challenge`), and record 2-of-2 P-256 ECDSA approvals (`POST /api/batches/{id}/approve`) to enqueue an idempotent `outbox_jobs` entry.
+6. **PayPal Submission (Explicit Human Authorization Required):** With operator confirmation, dispatch the outbox worker (`POST /api/outbox/process`) to verify the snapshot attestation, execute `PayPalClient` OAuth2 + `POST /v1/payments/payouts` using `PayPal-Request-Id`, and record the returned `paypal_batch_id`.
+7. **Reconciliation:** Poll `GET /v1/payments/payouts/{payout_batch_id}` or process webhook/reconciliation transitions so `outbox_jobs` and `payout_items` move only on definitive provider evidence (`MANUAL_RECONCILIATION_REQUIRED` on ambiguous timeouts).
+8. **Audit Verification:** Sign in as `dave_auditor` (`deepfakeshield_auditor`, read-only) and verify the end-to-end HMAC/SHA-256 chained `audit_events` timeline (`AUDIO_RISK_EVALUATED` -> `AUDIO_RISK_REVIEWED` -> `BATCH_FINALIZED` -> `OFFICER_APPROVED` -> `PAYPAL_SUBMITTED`).
 
 ---
 

@@ -1,0 +1,127 @@
+name: DeepfakeShield CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Security, Migrations & Automated Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -h 127.0.0.1 -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies and PostgreSQL client
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Generate ephemeral per-run CI credentials
+        run: |
+          python - <<'EOF'
+          import os, secrets
+
+          def gen_pw():
+              return secrets.token_urlsafe(24)
+
+          env_vars = {
+              "PGHOST": "127.0.0.1",
+              "PGPORT": "5432",
+              "PGUSER": "postgres",
+              "PGDATABASE": "deepfakeshield_test_ci",
+              "DISPOSABLE_PGDATABASE": "deepfakeshield_test_ci",
+              "CONFIRM_DISPOSABLE_DB_RESET": "true",
+              "DEMO_MODE": "true",
+              "PAYPAL_PROVIDER_MODE": "SIMULATOR",
+              "PAYPAL_BASE_URL": "https://api-m.sandbox.paypal.com",
+              "STRICT_CRYPTO_ENFORCEMENT": "true",
+              "PGPASSWORD": gen_pw(),
+              "APP_PASSWORD": gen_pw(),
+              "VERIFIER_PASSWORD": gen_pw(),
+              "WORKER_PASSWORD": gen_pw(),
+              "AUDITOR_PASSWORD": gen_pw(),
+              "ATTESTATION_SECRET": secrets.token_hex(32),
+              "BLIND_INDEX_KEY": secrets.token_hex(32),
+              "AUTH_ASSERTION_KEY": secrets.token_hex(32),
+          }
+
+          sensitive_keys = {
+              "PGPASSWORD", "APP_PASSWORD", "VERIFIER_PASSWORD",
+              "WORKER_PASSWORD", "AUDITOR_PASSWORD",
+              "ATTESTATION_SECRET", "BLIND_INDEX_KEY", "AUTH_ASSERTION_KEY",
+          }
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+              for k, v in env_vars.items():
+                  if k in sensitive_keys:
+                      print(f"::add-mask::{v}")
+                  f.write(f"{k}={v}\n")
+          EOF
+
+      - name: Initialize disposable PostgreSQL 18 database and apply migrations
+        run: |
+          psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER USER postgres WITH PASSWORD '${PGPASSWORD}';"
+          python setup_disposable_db.py --confirm-drop
+          ACTUAL_DB=$(psql -h 127.0.0.1 -p 5432 -U postgres -d "${DISPOSABLE_PGDATABASE}" -tAc "SELECT current_database();")
+          if [ "${ACTUAL_DB}" != "deepfakeshield_test_ci" ]; then
+            echo "ERROR: Unexpected database target '${ACTUAL_DB}'"
+            exit 1
+          fi
+          psql -h 127.0.0.1 -p 5432 -U postgres -d deepfakeshield_test_ci -v ON_ERROR_STOP=1 -f migrations/V10_1_4__database_audio_finalization_gate.sql
+          psql -h 127.0.0.1 -p 5432 -U postgres -d deepfakeshield_test_ci -v ON_ERROR_STOP=1 -f migrations/V10_1_5__manual_audio_risk_review.sql
+          psql -h 127.0.0.1 -p 5432 -U postgres -d deepfakeshield_test_ci -c "SELECT version, applied_at FROM schema_migrations ORDER BY applied_at;"
+
+      - name: Verify full pytest collection and repository hygiene
+        run: |
+          pytest tests/ --collect-only -q
+          git diff --check
+
+      - name: Run V10.1.5 security, migration, PayPal simulator, and API suite
+        run: |
+          mkdir -p test-results
+          pytest \
+            tests/test_release_security_startup.py \
+            tests/test_paypal_sandbox_api.py \
+            tests/test_database_audio_gate_migration.py \
+            tests/test_v10_1_5_manual_audio_review.py \
+            tests/test_final_acceptance.py \
+            tests/test_product_qa_and_ui.py::test_static_html_navigation_sections_and_honest_labeling \
+            -v --tb=short --junitxml=test-results/junit.xml 2>&1 | tee test-results/pytest.log
+
+      - name: Publish test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepfakeshield-ci-results
+          path: test-results/
+          retention-days: 14
